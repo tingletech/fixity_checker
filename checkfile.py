@@ -13,12 +13,7 @@ from pprint import pprint as pp
 import logging
 from functools import partial
 import hashlib
-
-# ionice... http://stackoverflow.com/a/6245160/1763984
 import psutil
-p = psutil.Process(os.getpid())
-if hasattr(p,'set_ionice'): # ... if we can http://stackoverflow.com/a/34472/1763984
-    p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
 
 
 def main(argv=None):
@@ -43,6 +38,11 @@ def main(argv=None):
     logging.basicConfig(level=numeric_level, )
     logging.debug(argv)
 
+    # ionice... http://stackoverflow.com/a/6245160/1763984
+    p = psutil.Process(os.getpid())
+    if hasattr(p,'set_ionice'): # ... if we can http://stackoverflow.com/a/34472/1763984
+        p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
+
     hasher = hashlib.new(argv.hashlib)
  
     filename = os.path.abspath(argv.filename[0])
@@ -53,10 +53,12 @@ def main(argv=None):
     observations = Shove(argv.cache_url)
 
     if filename_key in observations and not argv.update:
-        assert(compare_sightings(seen_now, observations[filename_key]))
+        looks_the_same = compare_sightings(seen_now, observations[filename_key])
+        assert bool(looks_the_same), "%r has changed" % filename
     else:
         observations[filename_key] = seen_now
         observations.sync()
+        logging.info('update observations')
 
 
 def compare_sightings(now, before):
