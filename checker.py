@@ -19,7 +19,7 @@ import psutil
 def main(argv=None):
     cache = "".join(['file://',user_cache_dir('yafixity', 'cdlib')])
     parser = argparse.ArgumentParser(description='checkfile')
-    parser.add_argument('filename', nargs=1)
+    parser.add_argument('filename', nargs='+')
     parser.add_argument('--update', dest='update', action='store_true',
                         help='skip file check and update recorded observation')
     parser.add_argument('--cache_url',
@@ -43,19 +43,21 @@ def main(argv=None):
     if hasattr(p,'set_ionice'): # ... if we can http://stackoverflow.com/a/34472/1763984
         p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
 
-    hasher = hashlib.new(argv.hashlib)
     observations = Shove(argv.cache_url)
 
-    check_one_file(argv.filename[0], observations, hasher, argv.update)
+    for filename in argv.filename:
+        check_one_file(filename, observations, argv.hashlib, argv.update)
 
-def check_one_file(filein, observations, hasher, update):
+
+def check_one_file(filein, observations, hash, update):
     """ check file"""
     # normalize filename, take hash for key 
     filename = os.path.abspath(filein)
     filename_key = hashlib.sha224(filename).hexdigest()
-    logging.info('{0}'.format(filename))
+    logging.info('{0} {1}'.format(filename, filename_key))
 
-    seen_now = analyze_file(filename, hasher)
+    seen_now = analyze_file(filename, hash)
+    logging.debug(seen_now)
 
     if filename_key in observations and not update:
         # make sure things match
@@ -84,9 +86,10 @@ def compare_sightings(now, before):
     return True
 
 
-def analyze_file(filename, hasher):
+def analyze_file(filename, hash):
     """ returns a dict of hash and size in bytes """
     # http://www.pythoncentral.io/hashing-files-with-python/
+    hasher = hashlib.new(hash)
     BLOCKSIZE = 1024 * hasher.block_size
     with open(filename, 'rb') as afile:
         buf = afile.read(BLOCKSIZE)
