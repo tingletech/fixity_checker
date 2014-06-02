@@ -19,8 +19,8 @@ def main(argv=None):
     cache = "".join(['file://',user_cache_dir('yafixity', 'cdlib')])
     parser = argparse.ArgumentParser(description='checkfile')
     parser.add_argument('filename', nargs=1)
-    parser.add_argument('--force', dest='force', action='store_true',
-                        help='skip file check and update observations')
+    parser.add_argument('--update', dest='update', action='store_true',
+                        help='skip file check and update recorded observation')
     parser.add_argument('--cache_url',
                         help='database URL to shove to (file://... for files)',
                         default=cache)
@@ -46,7 +46,7 @@ def main(argv=None):
     seen_now = analyze_file(filename, hasher)
     observations = Shove(argv.cache_url)
 
-    if filename in observations and not argv.force:
+    if filename in observations and not argv.update:
         assert(compare_sightings(seen_now, observations[filename]))
     else:
         observations[filename] = seen_now
