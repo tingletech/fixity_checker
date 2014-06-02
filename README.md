@@ -17,3 +17,8 @@ Traceback (most recent call last):
     assert bool(looks_the_same), "%r has changed" % filename
 AssertionError: '/Users/tingle/code/fixity/checkfile.py' has changed
 ```
+
+wrapper for cron
+```
+./find.sh /apps/content/raw_files/ --loglevel info
+```
