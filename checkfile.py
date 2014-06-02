@@ -14,6 +14,12 @@ import logging
 from functools import partial
 import hashlib
 
+# ionice... http://stackoverflow.com/a/6245160/1763984
+import psutil
+p = psutil.Process(os.getpid())
+if hasattr(p,'set_ionice'): # ... if we can http://stackoverflow.com/a/34472/1763984
+    p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
+
 
 def main(argv=None):
     cache = "".join(['file://',user_cache_dir('yafixity', 'cdlib')])
