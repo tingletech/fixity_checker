@@ -78,7 +78,7 @@ def compare_sightings(now, before):
 def analyze_file(filename, hasher):
     """ returns a dict of hash and size in bytes """
     # http://www.pythoncentral.io/hashing-files-with-python/
-    BLOCKSIZE = 65536
+    BLOCKSIZE = 1024 * hasher.block_size
     with open(filename, 'rb') as afile:
         buf = afile.read(BLOCKSIZE)
         while len(buf) > 0:
