@@ -46,16 +46,16 @@ def main(argv=None):
     hasher = hashlib.new(argv.hashlib)
  
     filename = os.path.abspath(argv.filename[0])
-    # filename_key = hasher
+    filename_key = hashlib.sha224(filename).hexdigest()
     logging.info('{0}'.format(filename))
 
     seen_now = analyze_file(filename, hasher)
     observations = Shove(argv.cache_url)
 
-    if filename in observations and not argv.update:
-        assert(compare_sightings(seen_now, observations[filename]))
+    if filename_key in observations and not argv.update:
+        assert(compare_sightings(seen_now, observations[filename_key]))
     else:
-        observations[filename] = seen_now
+        observations[filename_key] = seen_now
         observations.sync()
 
 
@@ -84,6 +84,8 @@ def analyze_file(filename, hasher):
         while len(buf) > 0:
             hasher.update(buf)
             buf = afile.read(BLOCKSIZE)
+        # in the future, add os.POSIX_FADV_DONTNEED support 
+        # http://www.gossamer-threads.com/lists/python/python/1063241
     return { 
       'size': os.path.getsize(filename),
       hasher.name : hasher.hexdigest()
