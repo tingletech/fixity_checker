@@ -46,7 +46,17 @@ def main(argv=None):
     observations = Shove(argv.cache_url)
 
     for filename in argv.filename:
-        check_one_file(filename, observations, argv.hashlib, argv.update)
+        check_one_arg(filename, observations, argv.hashlib, argv.update)
+
+
+def check_one_arg(filein, observations, hash, update):
+    if os.path.isdir(filein):
+        for root, ____, files in os.walk(filein):
+            for f in files:
+                fullpath = os.path.join(root, f)
+                check_one_file(fullpath, observations, hash, update)
+    else:
+        check_one_file(filein, observations, hash, update)
 
 
 def check_one_file(filein, observations, hash, update):
