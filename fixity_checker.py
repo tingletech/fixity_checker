@@ -43,8 +43,8 @@ def main(argv=None):
 
     observations = Shove(argv.cache_url)
 
-    for filename in argv.filename:
-        check_one_arg(filename, observations, argv.hashlib, argv.update)
+    for filepath in argv.filepath:
+        check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
 
 def check_one_arg(filein, observations, hash, update):
