@@ -15,7 +15,9 @@ import psutil
 
 
 def main(argv=None):
+    """fixity checker command line utility"""
     data = u"".join(['file://', user_data_dir('yafixity', 'cdlib')])
+
     parser = argparse.ArgumentParser(description='Yet another fixity checker')
     parser.add_argument(u'filepath', nargs='+', help='file or directory', type=str)
     parser.add_argument('--update', dest='update', action='store_true',
@@ -67,9 +69,12 @@ def check_one_arg(filein, observations, hash, update):
 
 def check_one_file(filein, observations, hash, update):
     """check file one file against our memories"""
-    # normalize filename, take hash for key
-    filename = os.path.abspath(filein).decode('utf-8')
+    try:
+        filename = os.path.abspath(filein).decode('utf-8')
+    except AttributeError:
+        filename = os.path.abspath(filein)
     logging.info('{0}'.format(filename))
+    # normalize filename, take hash for key
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
     logging.debug(filename_key)
 
