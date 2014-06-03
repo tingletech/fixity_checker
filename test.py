@@ -20,7 +20,7 @@ class TestCommand(unittest.TestCase):
         argv = argparse.Namespace()
         argv.filepath = ['test-data',]
         argv.loglevel = 'ERROR'
-        argv.cache_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
+        argv.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
         argv.hashlib = 'md5'
         argv.update = None
         self.assertTrue(fixity_checker.main(argv))

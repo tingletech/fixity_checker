@@ -7,21 +7,21 @@ import sys
 import os
 import argparse
 from shove import Shove
-from appdirs import user_cache_dir
+from appdirs import user_data_dir
 import logging
 import hashlib
 import psutil
 
 
 def main(argv=None):
-    cache = "".join(['file://', user_cache_dir('yafixity', 'cdlib')])
+    data = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
     parser = argparse.ArgumentParser(description='Yet another fixity checker')
     parser.add_argument('filepath', nargs='+', help='file or directory')
     parser.add_argument('--update', dest='update', action='store_true',
                         help='skip file check and update observations')
-    parser.add_argument('--cache_url',
+    parser.add_argument('--data_url',
                         help='database URL to shove to (file://... for files)',
-                        default=cache)
+                        default=data)
     parser.add_argument('--hashlib', default='sha512')
     parser.add_argument('--loglevel', default='ERROR')
 
@@ -42,7 +42,7 @@ def main(argv=None):
         p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
 
     # persisted dict interface for long term memory
-    observations = Shove(argv.cache_url)
+    observations = Shove(argv.data_url)
 
     for filepath in argv.filepath:
         assert filepath != '', "arguments can't be empty"

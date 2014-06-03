@@ -13,7 +13,7 @@ pip install https://github.com/tingletech/fixity/archive/master.zip
 ## use
 
 ```
-usage: checker [-h] [--update] [--cache_url CACHE_URL] [--hashlib HASHLIB]
+usage: checker [-h] [--update] [--data_url DATA_URL] [--hashlib HASHLIB]
                [--loglevel LOGLEVEL]
                filepath [filepath ...]
 ```
@@ -26,7 +26,7 @@ Supply the name(s) of files or directories to check.
  * at least `md5`, `sha1`, `sha224`, `sha256`, `sha384`, and `sha512` will always be present
  * supports any hash available to [`hashlib`](https://docs.python.org/2/library/hashlib.html#module-hashlib)
 
-### --cache_url
+### --data_url
 
  key/value database of hashes. 
 
