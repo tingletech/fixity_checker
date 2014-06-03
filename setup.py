@@ -15,6 +15,8 @@ except:
 
 
 requirements.append("shove")
+requirements.append("appdirs")
+requirements.append("psutil")
 
 setup(
     name = 'fixity_checker',

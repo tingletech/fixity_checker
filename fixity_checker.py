@@ -68,7 +68,7 @@ def check_one_file(filein, observations, hash, update):
     """check file one file against our memories"""
     # normalize filename, take hash for key
     filename = os.path.abspath(filein)
-    filename_key = hashlib.sha224(filename).hexdigest()
+    filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
     logging.info('{0} {1}'.format(filename, filename_key))
 
     seen_now = analyze_file(filename, hash)
