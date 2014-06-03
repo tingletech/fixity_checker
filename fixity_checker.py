@@ -18,7 +18,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Yet another fixity checker')
     parser.add_argument('filepath', nargs='+', help='file or directory')
     parser.add_argument('--update', dest='update', action='store_true',
-                        help='skip file check and update recorded observation(s)')
+                        help='skip file check and update observations')
     parser.add_argument('--cache_url',
                         help='database URL to shove to (file://... for files)',
                         default=cache)
@@ -44,6 +44,7 @@ def main(argv=None):
     observations = Shove(argv.cache_url)
 
     for filepath in argv.filepath:
+        assert filepath != '', "arguments can't be empty"
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
 
