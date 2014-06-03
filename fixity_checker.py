@@ -16,10 +16,10 @@ import psutil
 
 def main(argv=None):
     """fixity checker command line utility"""
-    data = u"".join(['file://', user_data_dir('yafixity', 'cdlib')])
+    data = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
 
     parser = argparse.ArgumentParser(description='Yet another fixity checker')
-    parser.add_argument(u'filepath', nargs='+', help='file or directory', type=str)
+    parser.add_argument('filepath', nargs='+', help='file or directory',)
     parser.add_argument('--update', dest='update', action='store_true',
                         help='skip file check and update observations')
     parser.add_argument('--data_url',
@@ -49,6 +49,7 @@ def main(argv=None):
 
     for filepath in argv.filepath:
         assert filepath, "arguments can't be empty"
+        filepath = filepath+''  # http://fomori.org/blog/?p=486
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
     observations.close()
@@ -69,10 +70,7 @@ def check_one_arg(filein, observations, hash, update):
 
 def check_one_file(filein, observations, hash, update):
     """check file one file against our memories"""
-    try:
-        filename = os.path.abspath(filein).decode('utf-8')
-    except AttributeError:
-        filename = os.path.abspath(filein)
+    filename = os.path.abspath(filein)
     logging.info('{0}'.format(filename))
     # normalize filename, take hash for key
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
