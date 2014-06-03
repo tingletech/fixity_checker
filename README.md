@@ -18,7 +18,7 @@ Supply the name(s) of files or directories to check.
 
 
 ## `--hashlib`
- * supports any hash available to `[hashlib](https://docs.python.org/2/library/hashlib.html#module-hashlib)`
+ * supports any hash available to [`hashlib`](https://docs.python.org/2/library/hashlib.html#module-hashlib)
  * at least `md5`, `sha1`, `sha224`, `sha256`, `sha384`, and `sha512` will always be present
 
 ## more options
