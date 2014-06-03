@@ -16,9 +16,9 @@ import psutil
 def main(argv=None):
     cache = "".join(['file://', user_cache_dir('yafixity', 'cdlib')])
     parser = argparse.ArgumentParser(description='checkfile')
-    parser.add_argument('filename', nargs='+')
+    parser.add_argument('filepath', nargs='+', help='file or directory')
     parser.add_argument('--update', dest='update', action='store_true',
-                        help='skip file check and update recorded observation')
+                        help='skip file check and update recorded observation(s)')
     parser.add_argument('--cache_url',
                         help='database URL to shove to (file://... for files)',
                         default=cache)
@@ -76,6 +76,7 @@ def check_one_file(filein, observations, hash, update):
     else:
         # update observations
         observations[filename_key] = seen_now
+        # save the filename in the record for reverse lookups
         observations.sync()
         logging.info('update observations')
 
