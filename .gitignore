@@ -1,1 +1,4 @@
 ve/
+build/
+fixity.egg-info/
+*.pyc
