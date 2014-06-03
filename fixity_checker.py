@@ -3,6 +3,7 @@
 """
 Yet another fixity checker.
 """
+from __future__ import unicode_literals
 import sys
 import os
 import argparse
@@ -14,9 +15,9 @@ import psutil
 
 
 def main(argv=None):
-    data = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
+    data = u"".join(['file://', user_data_dir('yafixity', 'cdlib')])
     parser = argparse.ArgumentParser(description='Yet another fixity checker')
-    parser.add_argument('filepath', nargs='+', help='file or directory')
+    parser.add_argument(u'filepath', nargs='+', help='file or directory', type=str)
     parser.add_argument('--update', dest='update', action='store_true',
                         help='skip file check and update observations')
     parser.add_argument('--data_url',
@@ -45,7 +46,7 @@ def main(argv=None):
     observations = Shove(argv.data_url)
 
     for filepath in argv.filepath:
-        assert filepath != '', "arguments can't be empty"
+        assert filepath, "arguments can't be empty"
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
     observations.close()
@@ -67,9 +68,10 @@ def check_one_arg(filein, observations, hash, update):
 def check_one_file(filein, observations, hash, update):
     """check file one file against our memories"""
     # normalize filename, take hash for key
-    filename = os.path.abspath(filein)
+    filename = os.path.abspath(filein).decode('utf-8')
+    logging.info('{0}'.format(filename))
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
-    logging.info('{0} {1}'.format(filename, filename_key))
+    logging.debug(filename_key)
 
     seen_now = analyze_file(filename, hash)
     logging.debug(seen_now)
