@@ -22,7 +22,7 @@ def main(argv=None):
     parser.add_argument('--cache_url',
                         help='database URL to shove to (file://... for files)',
                         default=cache)
-    parser.add_argument('--hashlib', default='md5')
+    parser.add_argument('--hashlib', default='sha512')
     parser.add_argument('--loglevel', default='ERROR')
 
     if argv is None:
