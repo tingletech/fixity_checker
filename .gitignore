@@ -1,4 +1,7 @@
 ve/
 build/
+dist/
 fixity.egg-info/
 *.pyc
+*.egg
+*.egg-info
