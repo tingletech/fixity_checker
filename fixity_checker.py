@@ -48,6 +48,8 @@ def main(argv=None):
         assert filepath != '', "arguments can't be empty"
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
+    observations.close()
+
     return True
 
 
@@ -67,17 +69,25 @@ def check_one_file(filein, observations, hash, update):
     # normalize filename, take hash for key
     filename = os.path.abspath(filein)
     filename_key = hashlib.sha224(filename).hexdigest()
-    logging.info('{0}'.format(filename))
+    logging.info('{0} {1}'.format(filename, filename_key))
 
     seen_now = analyze_file(filename, hash)
     logging.debug(seen_now)
 
     if filename_key in observations and not update:
         # make sure things match
+        news = {}
         looks_the_same = compare_sightings(
-            seen_now, observations[filename_key]
+            seen_now, observations[filename_key], news
         )
         assert bool(looks_the_same), "%r has changed" % filename
+        if any(news):
+            update = observations[filename_key]
+            update.update(news)
+            observations[filename_key] = update
+            observations.sync()
+            logging.debug('new memory')
+            logging.debug(update)
     else:
         # update observations
         observations[filename_key] = seen_now
@@ -85,8 +95,12 @@ def check_one_file(filein, observations, hash, update):
         logging.info('update observations')
 
 
-def compare_sightings(now, before):
+def compare_sightings(now, before, news={}):
     """ return False if sightings differ, otherwise True """
+    logging.debug('now')
+    logging.debug(now)
+    logging.debug('before')
+    logging.debug(before)
     if not now['size'] == before['size']:
         logging.error('sizes do not match')
         return False
@@ -99,6 +113,7 @@ def compare_sightings(now, before):
                 return False
         else:
             logging.info('{0} not seen before for this'.format(check))
+            news[check] = now[check]
     return True
 
 
