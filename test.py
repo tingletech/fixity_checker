@@ -42,9 +42,12 @@ class TestCompare(unittest.TestCase):
         a2 = { 'size': 2 }
         b = { 'size': 1, 'md5': 'xyz' } # pretend we just saw this <--
         bb = { 'size': 1, 'md5': 'xyz', 'path': '/path/' }
+        bc = { 'size': 1, 'md5': 'xyz', 'path': '/path2/' }
         c = { 'size': 1, 'md5': 'abc' }
         self.assertTrue(sight(b,b))          # no change since last time
         self.assertTrue(sight(b,bb))         # no change since last time (with path in the database)
+        self.assertTrue(sight(bb,b))         # 
+        self.assertFalse(sight(bc,bb))       # path is not the same
         self.assertTrue(sight(b,a1))         # have seen this file, but not this checksum type
         self.assertFalse(sight(b,a2))        # new sighting with changed size
         self.assertFalse(sight(b,c))         # new sighting with changed checksum
