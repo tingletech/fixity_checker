@@ -41,6 +41,7 @@ def main(argv=None):
     if hasattr(p, 'set_ionice'):
         p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
 
+    # persisted dict interface for long term memory
     observations = Shove(argv.cache_url)
 
     for filepath in argv.filepath:
@@ -49,6 +50,7 @@ def main(argv=None):
 
 
 def check_one_arg(filein, observations, hash, update):
+    """check if the arg is a file or directory, walk directory for files"""
     if os.path.isdir(filein):
         for root, ____, files in os.walk(filein):
             for f in files:
@@ -59,7 +61,7 @@ def check_one_arg(filein, observations, hash, update):
 
 
 def check_one_file(filein, observations, hash, update):
-    """ check file"""
+    """check file one file against our memories"""
     # normalize filename, take hash for key
     filename = os.path.abspath(filein)
     filename_key = hashlib.sha224(filename).hexdigest()
@@ -111,6 +113,7 @@ def analyze_file(filename, hash):
             hasher.update(buf)
             buf = afile.read(BLOCKSIZE)
         # in the future, add os.POSIX_FADV_DONTNEED support
+        # needs python 3 and newer linux kernel
         # http://www.gossamer-threads.com/lists/python/python/1063241
     return {
         'size': os.path.getsize(filename),
