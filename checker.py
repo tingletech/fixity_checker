@@ -15,7 +15,7 @@ import psutil
 
 def main(argv=None):
     cache = "".join(['file://', user_cache_dir('yafixity', 'cdlib')])
-    parser = argparse.ArgumentParser(description='checkfile')
+    parser = argparse.ArgumentParser(description='Yet another fixity checker')
     parser.add_argument('filepath', nargs='+', help='file or directory')
     parser.add_argument('--update', dest='update', action='store_true',
                         help='skip file check and update recorded observation(s)')
