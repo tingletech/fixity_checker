@@ -70,8 +70,6 @@ def check_one_file(filein, observations, hash, update):
     logging.info('{0}'.format(filename))
 
     seen_now = analyze_file(filename, hash)
-    # save the filename in the record for reverse lookups
-    seen_now['path'] = filename
     logging.debug(seen_now)
 
     if filename_key in observations and not update:
@@ -119,7 +117,8 @@ def analyze_file(filename, hash):
         # http://www.gossamer-threads.com/lists/python/python/1063241
     return {
         'size': os.path.getsize(filename),
-        hasher.name: hasher.hexdigest()
+        hasher.name: hasher.hexdigest(),
+        'path': filename
     }
 
 
