@@ -48,6 +48,8 @@ def main(argv=None):
         assert filepath != '', "arguments can't be empty"
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
+    return True
+
 
 def check_one_arg(filein, observations, hash, update):
     """check if the arg is a file or directory, walk directory for files"""
@@ -65,7 +67,7 @@ def check_one_file(filein, observations, hash, update):
     # normalize filename, take hash for key
     filename = os.path.abspath(filein)
     filename_key = hashlib.sha224(filename).hexdigest()
-    logging.info('{0} {1}'.format(filename, filename_key))
+    logging.info('{0}'.format(filename))
 
     seen_now = analyze_file(filename, hash)
     logging.debug(seen_now)
