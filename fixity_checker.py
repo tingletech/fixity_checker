@@ -12,11 +12,13 @@ from appdirs import user_data_dir
 import logging
 import hashlib
 import psutil
+import json
+from collections import defaultdict 
 
+DATA = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
 
 def main(argv=None):
     """fixity checker command line utility"""
-    data = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
 
     parser = argparse.ArgumentParser(description='Yet another fixity checker')
     parser.add_argument('filepath', nargs='+', help='file or directory',)
@@ -24,33 +26,26 @@ def main(argv=None):
                         help='skip file check and update observations')
     parser.add_argument('--data_url',
                         help='database URL to shove to (file://... for files)',
-                        default=data)
+                        default=DATA)
     parser.add_argument('--hashlib', default='sha512')
     parser.add_argument('--loglevel', default='ERROR')
 
     if argv is None:
         argv = parser.parse_args()
 
-    # set debugging level
-    numeric_level = getattr(logging, argv.loglevel.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % argv.loglevel)
-    logging.basicConfig(level=numeric_level, )
-    logging.debug(argv)
-
-    # ionice... http://stackoverflow.com/a/6245160/1763984
-    p = psutil.Process(os.getpid())
-    # ... if we can http://stackoverflow.com/a/34472/1763984
-    if hasattr(p, 'set_ionice'):
-        p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
-
+    nice_log(argv.loglevel.upper())
     # persisted dict interface for long term memory
     observations = Shove(argv.data_url)
 
+    # for each command line argument
     for filepath in argv.filepath:
         assert filepath, "arguments can't be empty"
         filepath = filepath+''  # http://fomori.org/blog/?p=486
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
+
+    # check for missing files
+    for ____, value in observations.iteritems():
+        assert os.path.isfile(value['path']), "{} no longer exists or is not a file".format(path)
 
     observations.close()
 
@@ -142,9 +137,82 @@ def analyze_file(filename, hash):
     }
 
 
+def nice_log(loglevel):
+    # set debugging level
+    numeric_level = getattr(logging, loglevel, None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % loglevel)
+    logging.basicConfig(level=numeric_level, )
+
+    # ionice... http://stackoverflow.com/a/6245160/1763984
+    p = psutil.Process(os.getpid())
+    # ... if we can http://stackoverflow.com/a/34472/1763984
+    if hasattr(p, 'set_ionice'):
+        p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
+
+
+def fixity_checker_report_command(argv=None):
+    """ main for report generator """
+    parser = argparse.ArgumentParser(description='Yet another fixity checker')
+    parser.add_argument('outputdir', nargs=1, help='file or directory',)
+    parser.add_argument('--data_url',
+                        help='database URL to shove to (file://... for files)',
+                        default=DATA)
+    parser.add_argument('--loglevel', default='ERROR')
+
+    if argv is None:
+        argv = parser.parse_args()
+
+    nice_log(argv.loglevel.upper())
+    # persisted dict interface for long term memory
+    observations = Shove(argv.data_url, flag='r')
+
+    fixity_checker_report(observations, argv.outputdir[0])
+
+    observations.close()
+    return True
+
+
+def fixity_checker_report(observations, outputdir):
+    """ output a listing of our memories """
+    shards = defaultdict(list)
+    _mkdir(outputdir)
+    # sort into bins for transport
+    for key, value in observations.iteritems():
+        shard_key = key[0]
+        value['key'] = key
+        shards[shard_key].append(value)
+    # write out json for each bin
+    for key, value in shards.iteritems():
+        out = os.path.join(outputdir, ''.join([key,'.json']))
+        with open(out, 'w') as outfile:
+            json.dump(shards[key], outfile)
+
+
+def _mkdir(newdir):
+    """works the way a good mkdir should :)
+        - already exists, silently complete
+        - regular file in the way, raise an exception
+        - parent directory(ies) does not exist, make them as well
+    """ # http://code.activestate.com/recipes/82465-a-friendly-mkdir/
+    if os.path.isdir(newdir):
+        pass
+    elif os.path.isfile(newdir):
+        raise OSError("a file with the same name as the desired " \
+                      "dir, '%s', already exists." % newdir)
+    else:
+        head, tail = os.path.split(newdir)
+        if head and not os.path.isdir(head):
+            _mkdir(head)
+        #print "_mkdir %s" % repr(newdir)
+        if tail:
+            os.mkdir(newdir)
+
+
 # main() idiom for importing into REPL for debugging
 if __name__ == "__main__":
     sys.exit(main())
+    #sys.exit(fixity_checker_report_command())
 
 
 """

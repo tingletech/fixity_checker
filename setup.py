@@ -13,7 +13,6 @@ try:
 except:
     requirements.append("hashlib")
 
-
 requirements.append("shove")
 requirements.append("appdirs")
 requirements.append("psutil")
@@ -30,6 +29,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'checker = fixity_checker:main',
+            'fixity_checker_report = fixity_checker:fixity_checker_report_command',
         ]
     },
     description = description,

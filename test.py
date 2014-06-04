@@ -5,7 +5,6 @@ import argparse
 import tempfile
 import shutil
 import os
-# from shove import Shove
 
 # 
 class TestCommand(unittest.TestCase):
@@ -17,6 +16,7 @@ class TestCommand(unittest.TestCase):
         shutil.rmtree(self.workspace)
 
     def test_integration(self):
+        # run the checker
         argv = argparse.Namespace()
         argv.filepath = ['test-data',]
         argv.loglevel = 'ERROR'
@@ -26,14 +26,16 @@ class TestCommand(unittest.TestCase):
         self.assertTrue(fixity_checker.main(argv))
         self.assertTrue(fixity_checker.main(argv))
 
-        # alter our memories, retry should fail
-        # observations = Shove(argv.cache_url)
-        # key, value = [value for value in observations.iteritems()][0]
-        # value['md5'] = 'xyz'
-        # observations[key] = value
-        # observations.sync()
-        # fixity_checker.main(argv)
-        # self.assertRaises(AssertionError, fixity_checker.main(argv))
+        # run the reporter
+        argv2 = argparse.Namespace()
+        argv2.loglevel = 'ERROR'
+        argv2.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
+        od = os.path.join(self.workspace,'test-report')
+        argv2.outputdir = [od,]
+        self.assertTrue(fixity_checker.fixity_checker_report_command(argv2))
+        print(self.workspace)
+        self.assertTrue(os.path.isfile(os.path.join(od,'a.json')))
+
 
 class TestCompare(unittest.TestCase):
     def test_compare(self):
