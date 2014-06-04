@@ -13,9 +13,10 @@ import logging
 import hashlib
 import psutil
 import json
-from collections import defaultdict 
+from collections import defaultdict
 
 DATA = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
+
 
 def main(argv=None):
     """fixity checker command line utility"""
@@ -49,7 +50,8 @@ def main(argv=None):
     # check for missing files
     for ____, value in list(observations.items()):
         logging.debug(value)
-        assert os.path.isfile(value['path']), "{} no longer exists or is not a file".format(value['path'])
+        assert os.path.isfile(value['path']),\
+            "{} no longer exists or is not a file".format(value['path'])
 
     observations.close()
 
@@ -185,7 +187,7 @@ def fixity_checker_report(observations, outputdir):
         shards[shard_key].update({key: value})
     # write out json for each bin
     for key, value in list(shards.items()):
-        out = os.path.join(outputdir, ''.join([key,'.json']))
+        out = os.path.join(outputdir, ''.join([key, '.json']))
         with open(out, 'w') as outfile:
             json.dump(shards[key], outfile, sort_keys=True,
                       indent=4, separators=(',', ': '))
@@ -196,17 +198,17 @@ def _mkdir(newdir):
         - already exists, silently complete
         - regular file in the way, raise an exception
         - parent directory(ies) does not exist, make them as well
-    """ # http://code.activestate.com/recipes/82465-a-friendly-mkdir/
+    """  # http://code.activestate.com/recipes/82465-a-friendly-mkdir/
     if os.path.isdir(newdir):
         pass
     elif os.path.isfile(newdir):
-        raise OSError("a file with the same name as the desired " \
+        raise OSError("a file with the same name as the desired "
                       "dir, '%s', already exists." % newdir)
     else:
         head, tail = os.path.split(newdir)
         if head and not os.path.isdir(head):
             _mkdir(head)
-        #print "_mkdir %s" % repr(newdir)
+        # print "_mkdir %s" % repr(newdir)
         if tail:
             os.mkdir(newdir)
 
@@ -214,7 +216,7 @@ def _mkdir(newdir):
 # main() idiom for importing into REPL for debugging
 if __name__ == "__main__":
     sys.exit(main())
-    #sys.exit(fixity_checker_report_command())
+    # sys.exit(fixity_checker_report_command())
 
 
 """
