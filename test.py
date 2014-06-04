@@ -23,8 +23,8 @@ class TestCommand(unittest.TestCase):
         argv.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
         argv.hashlib = 'md5'
         argv.update = None
-        self.assertTrue(fixity_checker.main(argv))
-        self.assertTrue(fixity_checker.main(argv))
+        self.assertTrue(fixity_checker.main(argv) == None)
+        self.assertTrue(fixity_checker.main(argv) == None)
 
         # run the reporter
         argv2 = argparse.Namespace()
@@ -32,8 +32,7 @@ class TestCommand(unittest.TestCase):
         argv2.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
         od = os.path.join(self.workspace,'test-report')
         argv2.outputdir = [od,]
-        self.assertTrue(fixity_checker.fixity_checker_report_command(argv2))
-        print(self.workspace)
+        self.assertTrue(fixity_checker.fixity_checker_report_command(argv2) == None)
         self.assertTrue(os.path.isfile(os.path.join(od,'a.json')))
 
 

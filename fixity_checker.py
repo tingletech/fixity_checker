@@ -49,8 +49,6 @@ def main(argv=None):
 
     observations.close()
 
-    return True
-
 
 def check_one_arg(filein, observations, hash, update):
     """check if the arg is a file or directory, walk directory for files"""
@@ -170,7 +168,6 @@ def fixity_checker_report_command(argv=None):
     fixity_checker_report(observations, argv.outputdir[0])
 
     observations.close()
-    return True
 
 
 def fixity_checker_report(observations, outputdir):
