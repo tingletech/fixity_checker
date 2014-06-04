@@ -44,7 +44,7 @@ def main(argv=None):
         check_one_arg(filepath, observations, argv.hashlib, argv.update)
 
     # check for missing files
-    for ____, value in observations.iteritems():
+    for ____, value in list(observations.items()):
         assert os.path.isfile(value['path']), "{} no longer exists or is not a file".format(path)
 
     observations.close()
@@ -104,7 +104,7 @@ def compare_sightings(now, before, news={}):
     if not now['size'] == before['size']:
         logging.error('sizes do not match')
         return False
-    for check in now.keys():
+    for check in list(now.keys()):
         if check in before:
             if now[check] != before[check]:
                 logging.error('{2} differ before:{1} now:{0}'.format(
@@ -178,12 +178,12 @@ def fixity_checker_report(observations, outputdir):
     shards = defaultdict(list)
     _mkdir(outputdir)
     # sort into bins for transport
-    for key, value in observations.iteritems():
+    for key, value in list(observations.items()):
         shard_key = key[0]
         value['key'] = key
         shards[shard_key].append(value)
     # write out json for each bin
-    for key, value in shards.iteritems():
+    for key, value in list(shards.items()):
         out = os.path.join(outputdir, ''.join([key,'.json']))
         with open(out, 'w') as outfile:
             json.dump(shards[key], outfile)
