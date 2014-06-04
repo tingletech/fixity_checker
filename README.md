@@ -5,7 +5,7 @@ looks wrong (unless `--update` option is given).
 
 ## install
 ```
-pip install https://github.com/tingletech/fixity/archive/master.zip
+pip install https://github.com/tingletech/fixity/archive/master.tar.gz
 ```
 
 [![Build Status](https://travis-ci.org/tingletech/fixity.svg)](https://travis-ci.org/tingletech/fixity)
