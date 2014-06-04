@@ -12,20 +12,12 @@ pip install https://github.com/tingletech/fixity/archive/master.tar.gz
 
 ## use
 
+Supply the name(s) of files or directories to check.
 ```
 usage: checker [-h] [--update] [--data_url DATA_URL] [--hashlib HASHLIB]
                [--loglevel LOGLEVEL]
                filepath [filepath ...]
 ```
-
-```
-usage: fixity_checker_report [-h] [--data_url DATA_URL] [--loglevel LOGLEVEL]
-                             outputdir
-```
-
-### command line arguments
-
-Supply the name(s) of files or directories to check.
 
 ### --hashlib
  * at least `md5`, `sha1`, `sha224`, `sha256`, `sha384`, and `sha512` will always be present
@@ -33,15 +25,22 @@ Supply the name(s) of files or directories to check.
 
 ### --data_url
 
- key/value database of hashes. 
+How should we record our observations? 
 
- * supported backends via [shove](https://pypi.python.org/pypi/shove)
+ * <b>supported backends</b> via [shove](https://pypi.python.org/pypi/shove)
  Amazon S3 Web Service, Apache Cassandra, Berkeley Source Database,
  DBM, Durus, FTP, Filesystem, Firebird, git, HDF5, LevelDB, Memory,
  Mercurial, Microsoft SQL Server, MongoDB, MySQL, Oracle, PostgreSQL,
  Redis, SQLite, Subversion, Zope Object Database (ZODB)
  * use [SQLAlchemy syntax for database URLs](http://docs.sqlalchemy.org/en/rel_0_9/core/engines.html)
 
-### more options
+for example `file://rel` `file:////full/path` `git://rel` <-- like file, but keeps it in revision control
 
-see `checker -h` for more information
+## Report
+
+To output a report in JSON, specify a directory
+
+```
+usage: fixity_checker_report [-h] [--data_url DATA_URL] [--loglevel LOGLEVEL]
+                             outputdir
+```
