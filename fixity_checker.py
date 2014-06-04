@@ -181,7 +181,7 @@ def fixity_checker_report(observations, outputdir):
     _mkdir(outputdir)
     # sort into bins for transport
     for key, value in list(observations.items()):
-        shard_key = key[0]
+        shard_key = key[:2]
         shards[shard_key].update({key: value})
     # write out json for each bin
     for key, value in list(shards.items()):
