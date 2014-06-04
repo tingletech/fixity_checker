@@ -45,7 +45,8 @@ def main(argv=None):
 
     # check for missing files
     for ____, value in list(observations.items()):
-        assert os.path.isfile(value['path']), "{} no longer exists or is not a file".format(path)
+        logging.debug(value)
+        assert os.path.isfile(value['path']), "{} no longer exists or is not a file".format(value['path'])
 
     observations.close()
 
