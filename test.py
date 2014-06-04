@@ -33,7 +33,9 @@ class TestCommand(unittest.TestCase):
         od = os.path.join(self.workspace,'test-report')
         argv2.outputdir = [od,]
         self.assertTrue(fixity_checker.fixity_checker_report_command(argv2) == None)
-        self.assertTrue(os.path.isfile(os.path.join(od,'a.json')))
+        f = [files for ____, ____, files in os.walk(od)][0][0]
+        self.assertTrue(f.endswith('.json'))
+        self.assertTrue(os.path.isfile(os.path.join(od,f)))
 
 
 class TestCompare(unittest.TestCase):

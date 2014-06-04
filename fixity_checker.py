@@ -34,8 +34,11 @@ def main(argv=None):
         argv = parser.parse_args()
 
     nice_log(argv.loglevel.upper())
+
+    logging.debug(argv)
+
     # persisted dict interface for long term memory
-    observations = Shove(argv.data_url)
+    observations = Shove(argv.data_url, protocol=0)
 
     # for each command line argument
     for filepath in argv.filepath:
@@ -164,7 +167,7 @@ def fixity_checker_report_command(argv=None):
 
     nice_log(argv.loglevel.upper())
     # persisted dict interface for long term memory
-    observations = Shove(argv.data_url, flag='r')
+    observations = Shove(argv.data_url, protocol=0, flag='r')
 
     fixity_checker_report(observations, argv.outputdir[0])
 
@@ -173,18 +176,19 @@ def fixity_checker_report_command(argv=None):
 
 def fixity_checker_report(observations, outputdir):
     """ output a listing of our memories """
-    shards = defaultdict(list)
+    logging.debug("{0}, {1}".format(observations, outputdir))
+    shards = defaultdict(dict)
     _mkdir(outputdir)
     # sort into bins for transport
     for key, value in list(observations.items()):
         shard_key = key[0]
-        value['key'] = key
-        shards[shard_key].append(value)
+        shards[shard_key].update({key: value})
     # write out json for each bin
     for key, value in list(shards.items()):
         out = os.path.join(outputdir, ''.join([key,'.json']))
         with open(out, 'w') as outfile:
-            json.dump(shards[key], outfile)
+            json.dump(shards[key], outfile, sort_keys=True,
+                      indent=4, separators=(',', ': '))
 
 
 def _mkdir(newdir):
