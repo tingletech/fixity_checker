@@ -18,6 +18,11 @@ usage: checker [-h] [--update] [--data_url DATA_URL] [--hashlib HASHLIB]
                filepath [filepath ...]
 ```
 
+```
+usage: fixity_checker_report [-h] [--data_url DATA_URL] [--loglevel LOGLEVEL]
+                             outputdir
+```
+
 ### command line arguments
 
 Supply the name(s) of files or directories to check.
