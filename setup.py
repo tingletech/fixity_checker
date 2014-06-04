@@ -25,6 +25,7 @@ setup(
     maintainer_email = 'brian.tingle.cdlib.org@gmail.com',
     packages = find_packages(),
     install_requires = requirements,
+    url = 'https://github.com/tingletech/fixity',
     py_modules = ['fixity_checker',],
     entry_points = {
         'console_scripts': [
