@@ -10,9 +10,13 @@ import os
 class TestCommand(unittest.TestCase):
 
     def setUp(self):
-        self.workspace = tempfile.mkdtemp(prefix='yafixity-test-')
+        self.workspace=tempfile.mkdtemp(prefix='yafixity-test-')
+        shutil.copytree('test-data', os.path.join(self.workspace, 'test-data'))
+        self.owd=os.getcwd()
+        os.chdir(self.workspace)
 
     def tearDown(self):
+        os.chdir(self.owd)
         shutil.rmtree(self.workspace)
 
     def test_integration(self):
