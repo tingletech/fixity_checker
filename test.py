@@ -23,8 +23,13 @@ class TestCommand(unittest.TestCase):
         argv.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
         argv.hashlib = 'md5'
         argv.update = None
-        self.assertTrue(fixity_checker.main(argv) == None)
-        self.assertTrue(fixity_checker.main(argv) == None)
+        fixity_checker.main(argv) == None
+        os.remove(os.path.join('test-data','README'))
+        try:
+            fixity_checker.main(argv)  # <-- this should fail
+            self.assertTrue(False)
+        except:
+            pass
 
         # run the reporter
         argv2 = argparse.Namespace()
