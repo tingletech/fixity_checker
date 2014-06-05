@@ -1,37 +1,35 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
+import os
 
-description = \
-"""
-Yet another fixity checker
-"""
 
-# for older pythons ...
-requirements = []
-try:
-    import hashlib
-except:
-    requirements.append("hashlib")
-
-requirements.append("shove")
-requirements.append("appdirs")
-requirements.append("psutil")
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = 'fixity_checker',
-    version= '0.1.0',
-    maintainer = "Brian Tingle",
-    maintainer_email = 'brian.tingle.cdlib.org@gmail.com',
-    packages = find_packages(),
-    install_requires = requirements,
-    url = 'https://github.com/tingletech/fixity',
-    py_modules = ['fixity_checker',],
-    entry_points = {
+    name='fixity_checker',
+    description='Yet another fixity checker',
+    long_description=read('README.md'),
+    version='0.1.0',
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'License :: OSI Approved :: BSD License',
+    ],
+    maintainer="Brian Tingle",
+    maintainer_email='brian.tingle.cdlib.org@gmail.com',
+    packages=find_packages(),
+    install_requires=['shove', 'appdirs', 'psutil'],
+    url='https://github.com/tingletech/fixity',
+    py_modules=['fixity_checker', ],
+    entry_points={
         'console_scripts': [
             'checker = fixity_checker:main',
-            'fixity_checker_report = fixity_checker:fixity_checker_report_command',
+            ''.join([
+                'fixity_checker_report = ',
+                'fixity_checker:fixity_checker_report_command',
+            ])
         ]
     },
-    description = description,
-    test_suite = 'test',
+    test_suite='test',
 )
