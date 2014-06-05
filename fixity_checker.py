@@ -14,14 +14,21 @@ import hashlib
 import psutil
 import json
 from collections import defaultdict
+import pkg_resources  # part of setuptools
 
+__version__ = pkg_resources.require("fixity_checker")[0].version
+
+
+
+# default directory to keep our observations
 DATA = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
+PICKLE_PROTOCOL=2
 
 
 def main(argv=None):
     """fixity checker command line utility"""
 
-    parser = argparse.ArgumentParser(description='Yet another fixity checker')
+    parser = argparse.ArgumentParser(description=''.join(['Yet another fixity checker ', __version__]))
     parser.add_argument('filepath', nargs='+', help='file or directory',)
     parser.add_argument('--update', dest='update', action='store_true',
                         help='skip file check and update observations')
@@ -39,7 +46,7 @@ def main(argv=None):
     logging.debug(argv)
 
     # persisted dict interface for long term memory
-    observations = Shove(argv.data_url, protocol=0)
+    observations = Shove(argv.data_url, protocol=PICKLE_PROTOCOL)
 
     # for each command line argument
     for filepath in argv.filepath:
@@ -157,7 +164,7 @@ def nice_log(loglevel):
 
 def fixity_checker_report_command(argv=None):
     """ main for report generator """
-    parser = argparse.ArgumentParser(description='Yet another fixity checker')
+    parser = argparse.ArgumentParser(description=''.join(['Yet another fixity checker ', __version__]))
     parser.add_argument('outputdir', nargs=1, help='file or directory',)
     parser.add_argument('--data_url',
                         help='database URL to shove to (file://... for files)',
@@ -169,7 +176,7 @@ def fixity_checker_report_command(argv=None):
 
     nice_log(argv.loglevel.upper())
     # persisted dict interface for long term memory
-    observations = Shove(argv.data_url, protocol=0, flag='r')
+    observations = Shove(argv.data_url, protocol=PICKLE_PROTOCOL, flag='r')
 
     fixity_checker_report(observations, argv.outputdir[0])
 

@@ -10,7 +10,7 @@ setup(
     name='fixity_checker',
     description='Yet another fixity checker',
     long_description=read('README.md'),
-    version='0.1.0',
+    version='0.1.1',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',

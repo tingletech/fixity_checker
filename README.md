@@ -69,7 +69,7 @@ usage: fixity_checker_report [-h] [--data_url DATA_URL] [--loglevel LOGLEVEL]
 A series of `.json` files serializing the contents of the application's
 persistent data will be created in the output directory.
 
-The `.json` is sorted and spaced in a way that is hoped to make it work will
+The `.json` is sorted and spaced in a way that is hoped to make it work well
 with revision control system such as `git`.  `git`'s support of digital 
 signatures and revision history could be used to support audit requirements.
 
