@@ -3,7 +3,7 @@
 Designed to be run from `cron` on unix.  Will exit non-zero if anything
 looks wrong (unless `--update` option is given).
 
-_for Python versions 2.5, 2.6, 3.3, 3.4_
+_for Python versions 2.6, 2.7, 3.3, 3.4_
 
 ## install
 ```
@@ -21,9 +21,13 @@ before are noted, files that have been seen before are checked.
 After checking all files and directories supplied on the command
 line, the existance of all files ever noted is verified.
 
-The command exits with a error if any file has changed or is missing.
-I'm running this from cron twice a week over certain directories of 
-content files.
+The command exits with a non-zero exit code (unsuccessful) if any
+file has changed or is missing.  No STDOUT/STDERR is produced and
+an exit code of 0 is issued upon successful execution.  Running
+this from the crontab will cause an email to be sent if files change
+or go missing.
+
+TODO: better alerts (email, Amazon SNS, growl)
 
 ```
 usage: checker [-h] [--update] [--data_url DATA_URL] [--hashlib HASHLIB]
