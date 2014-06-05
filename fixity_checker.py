@@ -18,8 +18,6 @@ import pkg_resources  # part of setuptools
 
 __version__ = pkg_resources.require("fixity_checker")[0].version
 
-
-
 # default directory to keep our observations
 DATA = "".join(['file://', user_data_dir('yafixity', 'cdlib')])
 PICKLE_PROTOCOL=2
@@ -43,7 +41,7 @@ def main(argv=None):
 
     nice_log(argv.loglevel.upper())
 
-    logging.debug(argv)
+    logging.debug('arguments {0}'.format('argv'))
 
     # persisted dict interface for long term memory
     observations = Shove(argv.data_url, protocol=PICKLE_PROTOCOL)
@@ -56,7 +54,6 @@ def main(argv=None):
 
     # check for missing files
     for ____, value in list(observations.items()):
-        logging.debug(value)
         assert os.path.isfile(value['path']),\
             "{} no longer exists or is not a file".format(value['path'])
 
@@ -80,10 +77,10 @@ def check_one_file(filein, observations, hash, update):
     logging.info('{0}'.format(filename))
     # normalize filename, take hash for key
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
-    logging.debug(filename_key)
+    logging.debug('sha224 of path {0}'.format(filename_key))
 
     seen_now = analyze_file(filename, hash)
-    logging.debug(seen_now)
+    logging.debug('seen_now {0}'.format(seen_now))
 
     if filename_key in observations and not update:
         # make sure things match
@@ -97,8 +94,7 @@ def check_one_file(filein, observations, hash, update):
             update.update(news)
             observations[filename_key] = update
             observations.sync()
-            logging.debug('new memory')
-            logging.debug(update)
+            logging.debug('new memory {0}'.format(memory))
     else:
         # update observations
         observations[filename_key] = seen_now
@@ -108,10 +104,7 @@ def check_one_file(filein, observations, hash, update):
 
 def compare_sightings(now, before, news={}):
     """ return False if sightings differ, otherwise True """
-    logging.debug('now')
-    logging.debug(now)
-    logging.debug('before')
-    logging.debug(before)
+    logging.debug('now {0} before {1}'.format(now, before))
     if not now['size'] == before['size']:
         logging.error('sizes do not match')
         return False
