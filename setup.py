@@ -10,7 +10,7 @@ setup(
     name='fixity_checker',
     description='Yet another fixity checker',
     long_description=read('README.md'),
-    version='0.1.1',
+    version='0.2.0',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
@@ -19,7 +19,7 @@ setup(
     maintainer="Brian Tingle",
     maintainer_email='brian.tingle.cdlib.org@gmail.com',
     packages=find_packages(),
-    install_requires=['shove', 'appdirs', 'psutil'],
+    install_requires=['shove', 'appdirs', 'psutil', 'daemonocle'],
     url='https://github.com/tingletech/fixity',
     py_modules=['fixity_checker', ],
     entry_points={
