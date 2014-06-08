@@ -27,7 +27,8 @@ positional arguments:
     show_conf           validate and show configuration options
     start               starts the checker server
     stop                stops the checker server
-    status              produces a report of the server status and any errors
+    status              produces a report of the server status
+    errors              reports on any fixity errors that have been found
     restart             stop follow by a start
     update              updates fixity info (server must be stopped)
     json_report         json serialization of application data

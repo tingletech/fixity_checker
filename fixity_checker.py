@@ -63,7 +63,8 @@ def main(argv=None):
         ('show_conf', 'validate and show configuration options'),
         ('start', 'starts the checker server'),
         ('stop', 'stops the checker server'),
-        ('status', 'produces a report of the server status and any errors'),
+        ('status', 'produces a report of the server status'),
+        ('errors', 'reports on any fixity errors that have been found'),
         ('restart', 'stop follow by a start'),
         ('update', 'updates fixity info (server must be stopped)'),
         ('json_report', 'json serialization of application data'),
@@ -144,6 +145,7 @@ def checker(conf):
     startLoopTime = time.time()
     # persisted dict interface for long term memory
     observations = Shove(conf.data['data_url'], protocol=2)
+    errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
 
     # counts
 
@@ -155,13 +157,15 @@ def checker(conf):
             assert filepath, "arguments can't be empty"
             filepath = filepath+''  # http://fomori.org/blog/?p=486
 
-            check_one_arg(filepath, observations, hashtype, False, conf)
+            check_one_arg(filepath, observations, hashtype, False, conf, errors)
 
     # check for missing files
     logging.info('looking for missing files')
     for ____, value in list(observations.items()):
         if not os.path.isfile(value['path']):
-            track_error("{0} no longer exists or is not a file".format(value['path']))
+            track_error(value['path'],
+                        "{0} no longer exists or is not a file".format(value['path']),
+                        errors)
 
     # output json reports
     fixity_checker_report(observations, conf.app.json_dir)
@@ -178,10 +182,15 @@ def checker(conf):
         time.sleep(nap)
 
 
-def track_error(message):
+def track_error(path, message, errors):
     logging.warning(message)
-    # and make a note of it
-
+    filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
+    note = { message: True }
+    if filename_key in errors:
+        errors[filename_key].update(note)
+    else:
+        errors[filename_key] = note
+    errors.sync()
 
 # ⌦
 # ⌦  following functions impliment subcommands
@@ -290,7 +299,7 @@ def _parse_conf(args):
 
     # build up nested named tuple to hold parsed config 
     app_config = namedtuple('fixity',
-        'json_dir, conf_file',
+        'json_dir, conf_file, errors',
     )
     daemon_config = namedtuple('FixityDaemon', 'pid, log', )
     daemon_config.pid = os.path.abspath(
@@ -298,6 +307,7 @@ def _parse_conf(args):
     daemon_config.log = os.path.abspath(
         os.path.join(conf, 'logs', '{0}.log'.format(APP_NAME)))
     app_config.json_dir = os.path.abspath(os.path.join(conf, 'json_dir'))
+    app_config.errors = os.path.abspath(os.path.join(conf, 'errors'))
     c = namedtuple('FixityConfig','app, daemon, args, data, conf_file')
     c.app = app_config
     c.daemon = daemon_config
@@ -345,13 +355,28 @@ def status(conf, daemon):
     print(output)
     if 'not running' in output:
         exit(2)
-    # check for un-cleared errors with files
+
+
+def errors(conf, daemon):
+    """ check for un-cleared errors with files"""
+    # persisted dict interface for long term memory
+    errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
+    if any(errors):
+        print("errors found")
+        for path, error in list(errors.items()):
+            pp(error)
+        errors.close()
+        exit(1)
+    else:
+        print("no errors found - OK")
+        errors.close()
 
 
 def update(conf, daemon):
     """ alter the truth to clear an error """
     # check if the server is running; if so, bail
     pp(conf.args)
+    print("not implimented")
 
 
 def json_report(conf, daemon):
@@ -363,6 +388,7 @@ def json_report(conf, daemon):
 
 def json_load(conf, daemon):
     pp(conf.args)
+    print("not implimented")
 
 
 def start():
@@ -458,18 +484,18 @@ def valid_path(string):
 # ⌦
 
 
-def check_one_arg(filein, observations, hash, update, conf):
+def check_one_arg(filein, observations, hash, update, conf, errors):
     """check if the arg is a file or directory, walk directory for files"""
     if os.path.isdir(filein):
         for root, ____, files in os.walk(filein):
             for f in files:
                 fullpath = os.path.join(root, f)
-                check_one_file(fullpath, observations, hash, update, conf)
+                check_one_file(fullpath, observations, hash, update, conf, errors)
     else:
-        check_one_file(filein, observations, hash, update, conf)
+        check_one_file(filein, observations, hash, update, conf, errors)
 
 
-def check_one_file(filein, observations, hash, update, conf):
+def check_one_file(filein, observations, hash, update, conf, errors):
     """check file one file against our memories"""
     startTime = time.time()
     filename = os.path.abspath(filein)
@@ -488,7 +514,7 @@ def check_one_file(filein, observations, hash, update, conf):
             seen_now, observations[filename_key], news
         )
         if not looks_the_same:
-            track_error("%r has changed" % filename)
+            track_error(filename, "%r has changed" % filename, errors)
         if any(news):
             update = observations[filename_key]
             update.update(news)
@@ -501,8 +527,12 @@ def check_one_file(filein, observations, hash, update, conf):
         observations.sync()
         logging.info('update observations')
 
+    # take a nap, for longer if the system load is high
     elapsedTime = time.time() - startTime
-    time.sleep(os.getloadavg()[0] * elapsedTime * conf.data['sleepiness'])
+    load = os.getloadavg()[0]
+    nap = load * elapsedTime * conf.data['sleepiness']
+    logging.debug('napping for {0}, load {1}'.format(nap, load))
+    time.sleep(nap)
 
 
 def compare_sightings(now, before, news={}):
