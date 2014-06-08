@@ -3,7 +3,7 @@
 fixity checking daemon
 
 
-_for Python versions 2.6, 2.7, 3.3, 3.4_
+_for Python versions 2.6, 2.7, <s>3.3, 3.4</s>_
 
 ## install
 ```

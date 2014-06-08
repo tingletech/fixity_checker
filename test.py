@@ -8,34 +8,6 @@ import os
 from scripttest import TestFileEnvironment
 
 # 
-class TestCommand(unittest.TestCase):
-
-    def setUp(self):
-        self.workspace=tempfile.mkdtemp(prefix='yafixity-test-')
-        shutil.copytree('test-data', os.path.join(self.workspace, 'test-data'))
-        self.owd=os.getcwd()
-        os.chdir(self.workspace)
-        self.env = TestFileEnvironment(
-            os.path.join(self.workspace, 'env')
-        )
-
-    def tearDown(self):
-        os.chdir(self.owd)
-        shutil.rmtree(self.workspace)
-
-    def test_integration(self):
-        command = os.path.join(self.owd, 'fixity_checker.py')
-        #result = self.env.run('true')
-        #result = self.env.run(command, expect_error=True)
-        #self.assertTrue(result.stderr.startswith('usage'))
-        #self.env.run(command, 'init', '--archive_paths', './test-data/', '-d', 'xx')
-        # os.environ['CHECKER_DIR'] = "xx"
-        # self.env.run(command, 'start', expect_stderr=True)
-        # self.env.run(command, 'status', expect_stderr=True)
-        # self.env.run(command, 'restart', expect_stderr=True)
-        # self.env.run(command, 'stop', expect_stderr=True)
-
-
 class TestCompare(unittest.TestCase):
     def test_compare(self):
         sight = fixity_checker.compare_sightings
@@ -56,6 +28,7 @@ class TestCompare(unittest.TestCase):
         self.assertTrue(sight(b,a1))         # have seen this file, but not this checksum type
         self.assertFalse(sight(b,a2))        # new sighting with changed size
         self.assertFalse(sight(b,c))         # new sighting with changed checksum
+
 
 class TestObserve(unittest.TestCase):
     def test_observe(self):
@@ -85,3 +58,30 @@ class TestObserve(unittest.TestCase):
             'size': 326929,
             'md5': '5580eaa31ad1549739de12df819e9af8'
         }))
+
+
+class TestCommand(unittest.TestCase):
+    def setUp(self):
+        self.workspace=tempfile.mkdtemp(prefix='yafixity-test-')
+        shutil.copytree('test-data', os.path.join(self.workspace, 'test-data'))
+        self.owd=os.getcwd()
+        os.chdir(self.workspace)
+        self.env = TestFileEnvironment(
+            os.path.join(self.workspace, 'env')
+        )
+
+    def tearDown(self):
+        os.chdir(self.owd)
+        shutil.rmtree(self.workspace)
+
+    def test_integration(self):
+        command = os.path.join(self.owd, 'fixity_checker.py')
+        result = self.env.run(command, expect_error=True)
+        self.assertTrue(result.stderr.startswith('usage'))
+        self.env.run(command, 'init', '--archive_paths', './test-data/', '-d', 'xx')
+        os.environ['CHECKER_DIR'] = "xx"
+        self.env.run(command, 'start', expect_stderr=True)
+        self.env.run(command, 'status', expect_stderr=True)
+        self.env.run(command, 'restart', expect_stderr=True)
+        self.env.run(command, 'stop', expect_stderr=True)
+
