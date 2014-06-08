@@ -20,15 +20,12 @@ setup(
     maintainer_email='brian.tingle.cdlib.org@gmail.com',
     packages=find_packages(),
     install_requires=['shove', 'appdirs', 'psutil', 'daemonocle'],
+    tests_require=['scripttest'],
     url='https://github.com/tingletech/fixity',
     py_modules=['fixity_checker', ],
     entry_points={
         'console_scripts': [
             'checker = fixity_checker:main',
-            ''.join([
-                'fixity_checker_report = ',
-                'fixity_checker:fixity_checker_report_command',
-            ])
         ]
     },
     test_suite='test',

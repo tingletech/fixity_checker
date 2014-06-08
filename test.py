@@ -5,6 +5,7 @@ import argparse
 import tempfile
 import shutil
 import os
+from scripttest import TestFileEnvironment
 
 # 
 class TestCommand(unittest.TestCase):
@@ -14,37 +15,25 @@ class TestCommand(unittest.TestCase):
         shutil.copytree('test-data', os.path.join(self.workspace, 'test-data'))
         self.owd=os.getcwd()
         os.chdir(self.workspace)
+        self.env = TestFileEnvironment(
+            os.path.join(self.workspace, 'env')
+        )
 
     def tearDown(self):
         os.chdir(self.owd)
         shutil.rmtree(self.workspace)
 
     def test_integration(self):
-        # run the checker
-        argv = argparse.Namespace()
-        argv.filepath = ['test-data',]
-        argv.loglevel = 'ERROR'
-        argv.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
-        argv.hashlib = 'md5'
-        argv.update = None
-        fixity_checker.main(argv) == None
-        os.remove(os.path.join('test-data','README'))
-        try:
-            fixity_checker.main(argv)  # <-- this should fail
-            self.assertTrue(False)
-        except:
-            pass
-
-        # run the reporter
-        argv2 = argparse.Namespace()
-        argv2.loglevel = 'ERROR'
-        argv2.data_url = ''.join(['file://', os.path.join(self.workspace,'shove')])
-        od = os.path.join(self.workspace,'test-report')
-        argv2.outputdir = [od,]
-        self.assertTrue(fixity_checker.fixity_checker_report_command(argv2) == None)
-        f = [files for ____, ____, files in os.walk(od)][0][0]
-        self.assertTrue(f.endswith('.json'))
-        self.assertTrue(os.path.isfile(os.path.join(od,f)))
+        command = os.path.join(self.owd, 'fixity_checker.py')
+        #result = self.env.run('true')
+        #result = self.env.run(command, expect_error=True)
+        #self.assertTrue(result.stderr.startswith('usage'))
+        #self.env.run(command, 'init', '--archive_paths', './test-data/', '-d', 'xx')
+        # os.environ['CHECKER_DIR'] = "xx"
+        # self.env.run(command, 'start', expect_stderr=True)
+        # self.env.run(command, 'status', expect_stderr=True)
+        # self.env.run(command, 'restart', expect_stderr=True)
+        # self.env.run(command, 'stop', expect_stderr=True)
 
 
 class TestCompare(unittest.TestCase):
