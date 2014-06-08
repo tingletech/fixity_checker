@@ -230,7 +230,6 @@ def init(args):
     except:
         hashlib_algorithms = tuple(hashlib.algorithms_available)
 
-
     pp(list(hashlib_algorithms))
 
     hash = default(
