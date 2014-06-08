@@ -117,31 +117,40 @@ def main(argv=None):
 
     conf = _parse_conf(argv)
 
-    def main_loop():
+    detach = True
+    if 'detach' in argv:
+        detach = argv.detach
+    if sys.argv[1] == 'update':
+        detach = False
+
+    def main_loop_wrapper():
         # nested here to gain access to `conf`
         log_nice(conf)
         logging.info('Daemon is starting')
         while True:
             checker(conf)
 
-    detach = True
-    if 'detach' in argv:
-        detach = argv.detach
+    def cb_shutdown(message, code):
+        # don't have access to observations or errror here; pull these out 
+        # a level so we can close them?
+        if conf.args.subparser_name != 'update':
+            logging.info('Daemon is stopping')
+            logging.debug(message)
+
     daemon = daemonocle.Daemon(
-        worker=main_loop,
+        worker=main_loop_wrapper,
+        workdir=os.getcwd(),
         shutdown_callback=cb_shutdown,
         pidfile=conf.daemon.pid,
         detach=detach
     )
+
     if sys.argv[1] in ['start', 'stop', 'restart']:
         daemon.do_action(sys.argv[1])
+    elif sys.argv[1] == 'update':
+        daemon.do_action('start')
     else:
         return argv.func(conf, daemon)
-
-
-def cb_shutdown(message, code):
-    logging.info('Daemon is stopping')
-    logging.debug(message)
 
 
 def checker(conf):
@@ -150,6 +159,25 @@ def checker(conf):
     # persisted dict interface for long term memory
     observations = Shove(conf.data['data_url'], protocol=2)
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
+
+
+    # %%
+    # %% update the database and quit
+    # %% 
+    if conf.args.subparser_name == 'update':
+        logging.warning('altering memories')
+        for f in conf.args.file:
+            path = os.path.abspath(f)
+            print(path)
+            for hashtype in conf.data['hashlib']:
+                check_one_file(path, observations, hashtype, True, conf, errors)
+                observations.sync()
+            filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
+            errors.pop(filename_key, None)
+            errors.sync()
+        observations.close()
+        errors.close()
+        exit(0)
 
     # counts
 
