@@ -38,6 +38,10 @@ optional arguments:
   -h, --help            show this help message and exit
 ```
 
+### Configuration
+
+set <code>CHECKER_DIR</code> environmental variable or use <code>-d CONFIG_DIR</code> option after subcommand 
+to specify application and server configuration.
 
 # Related work
 

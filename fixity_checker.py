@@ -50,7 +50,11 @@ __version__ = pkg_resources.require(APP_NAME)[0].version
 
 def main(argv=None):
     """main: argument parsing and daemon setup"""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        epilog='using CHECKER_DIR="{0}"; use -d dir after \
+        subcommand or change env to use different config \
+        dir\n\t{1} {2}'.format(CHECKER_DIR, APP_NAME, __version__)
+    )
 
     subparsers = parser.add_subparsers(dest='subparser_name')
 
