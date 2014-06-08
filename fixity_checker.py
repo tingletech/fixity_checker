@@ -161,7 +161,7 @@ def checker(conf):
     logging.info('looking for missing files')
     for ____, value in list(observations.items()):
         if not os.path.isfile(value['path']):
-            track_error("{} no longer exists or is not a file".format(value['path']))
+            track_error("{0} no longer exists or is not a file".format(value['path']))
 
     # output json reports
     fixity_checker_report(observations, conf.app.json_dir)
@@ -194,9 +194,9 @@ def init(args):
 
     # don't run more than once
     assert not(os.path.exists(conf)), \
-        "{} directory specified for init must not exist".format(conf)
+        "{0} directory specified for init must not exist".format(conf)
 
-    data_url_default = 'file://{}/'.format(os.path.abspath(
+    data_url_default = 'file://{0}/'.format(os.path.abspath(
                                            os.path.join(conf,
                                                         'fixity_data_raw')))
 
@@ -210,7 +210,7 @@ def init(args):
     # ** run the install interactive script
     # **
 
-    prompt("Initalize a new checker server at {} [Yes/no]?".format(conf),
+    prompt("Initalize a new checker server at {0} [Yes/no]?".format(conf),
            confirm_or_die)
 
     directories = multi_prompt(
