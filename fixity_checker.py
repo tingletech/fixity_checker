@@ -225,13 +225,19 @@ def init(args):
     )
     print(data_url)
 
-    print(hashlib.algorithms)
+    try:
+        hashlib_algorithms = list(hashlib.algorithms)
+    except:
+        hashlib_algorithms = list(hashlib.algorithms_available)
+
+
+    pp(list(hashlib_algorithms))
 
     hash = default(
         'Pick a hashlib',
         'sha512',
-        lambda x : x in hashlib.algorithms + ('',),
-        ' '.join(hashlib.algorithms)
+        lambda x : x in hashlib_algorithms + ['',],
+        ' '.join(hashlib_algorithms)
     )
     print(hash)
 
