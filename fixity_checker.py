@@ -141,7 +141,6 @@ def cb_shutdown(message, code):
 
 def checker(conf):
     """ the main loop """
-    MIN_LOOP = 15  # put this is conf.data['']
     startLoopTime = time.time()
     # persisted dict interface for long term memory
     observations = Shove(conf.data['data_url'], protocol=2)
@@ -173,8 +172,8 @@ def checker(conf):
     # logging.info("elapsedLoopTime {0} {1} files {2} bytes".format(elapsedLoopTime))
     logging.info("elapsedLoopTime {0}".format(elapsedLoopTime))
 
-    if elapsedLoopTime < MIN_LOOP:
-        nap = MIN_LOOP - elapsedLoopTime
+    if elapsedLoopTime < conf.data['min_loop']:
+        nap = conf.data['min_loop'] - elapsedLoopTime
         logging.info('sleeping for {0}'.format(nap))
         time.sleep(nap)
 
@@ -254,6 +253,7 @@ def _init(conf, directories, data_url, hash):
         'data_url': data_url,
         'hashlib': [ hash ],
         'loglevel': 'INFO',
+        'min_loop': 43200,          # twice a day
         'sleepiness': 1
     }
     os.mkdir(conf)
