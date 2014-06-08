@@ -17,6 +17,7 @@ from pprint import pprint as pp
 import time
 from collections import namedtuple, defaultdict
 import logging
+import logging.handlers
 from shove import Shove
 import hashlib
 import psutil
@@ -550,11 +551,13 @@ def log_nice(conf):
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % conf.data['loglevel'])
 
-    logging.basicConfig(
-        filename=conf.daemon.log,
-        level=numeric_level,
-        format='%(asctime)s [%(levelname)s] %(message)s',
-    )
+    logger = logging.getLogger()
+    logger.setLevel(numeric_level)
+    rh = logging.handlers.TimedRotatingFileHandler(conf.daemon.log, when='midnight',)
+    rh.setLevel(numeric_level)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    rh.setFormatter(formatter)
+    logger.addHandler(rh)
 
     # ionice... http://stackoverflow.com/a/6245160/1763984
     p = psutil.Process(os.getpid())
