@@ -20,6 +20,7 @@ import logging
 from shove import Shove
 import hashlib
 import psutil
+import cStringIO
 
 # raw_import() in 2 -> import() in 3
 try:
@@ -326,8 +327,24 @@ def show_conf(conf, ____):
 
 
 def status(conf, daemon):
-    daemon.do_action('status')
-    # check for un-cleared errors
+    """daemon and fixity status report"""
+    # daemonocle exit's 0 when 'not running', capture STDOUT
+    # http://stackoverflow.com/a/1983450/1763984
+    def captureSTDOUT(thefun, *a, **k):
+        savstdout = sys.stdout
+        sys.stdout = cStringIO.StringIO()
+        try:
+            thefun(*a, **k)
+        finally:
+            v = sys.stdout.getvalue()
+            sys.stdout = savstdout
+        return v
+
+    output = captureSTDOUT(daemon.do_action, 'status')
+    print(output)
+    if 'not running' in output:
+        exit(2)
+    # check for un-cleared errors with files
 
 
 def update(conf, daemon):
@@ -476,7 +493,7 @@ def check_one_file(filein, observations, hash, update, conf):
             update.update(news)
             observations[filename_key] = update
             observations.sync()
-            logging.debug('new memory {0}'.format(memory))
+            logging.debug('new memory {0}'.format(news))
     else:
         # update observations
         observations[filename_key] = seen_now
@@ -531,7 +548,7 @@ def log_nice(conf):
     # set debugging level
     numeric_level = getattr(logging, conf.data['loglevel'], None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError('Invalid log level: %s' % conf.data['loglevel'])
 
     logging.basicConfig(
         filename=conf.daemon.log,
@@ -615,4 +632,3 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
-
