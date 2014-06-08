@@ -6,6 +6,7 @@ import tempfile
 import shutil
 import os
 from scripttest import TestFileEnvironment
+import time
 
 # 
 class TestCompare(unittest.TestCase):
@@ -62,6 +63,7 @@ class TestObserve(unittest.TestCase):
 
 class TestCommand(unittest.TestCase):
     def setUp(self):
+        os.putenv('CHECKER_DIR', 'xx')
         self.workspace=tempfile.mkdtemp(prefix='yafixity-test-')
         shutil.copytree('test-data', os.path.join(self.workspace, 'test-data'))
         self.owd=os.getcwd()
@@ -79,9 +81,9 @@ class TestCommand(unittest.TestCase):
         result = self.env.run(command, expect_error=True)
         self.assertTrue(result.stderr.startswith('usage'))
         self.env.run(command, 'init', '--archive_paths', './test-data/', '-d', 'xx')
-        os.environ['CHECKER_DIR'] = "xx"
         self.env.run(command, 'start', expect_stderr=True)
-        self.env.run(command, 'status', expect_stderr=True)
+        time.sleep(0.25)
+        # self.env.run(command, 'status', expect_stderr=True)
         self.env.run(command, 'restart', expect_stderr=True)
         self.env.run(command, 'stop', expect_stderr=True)
 
