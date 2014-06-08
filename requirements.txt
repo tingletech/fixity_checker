@@ -9,3 +9,4 @@ shove==0.5.6
 six==1.6.1
 stuf==0.9.4
 #wsgiref==0.1.2
+https://github.com/tingletech/daemonocle/archive/master.zip
