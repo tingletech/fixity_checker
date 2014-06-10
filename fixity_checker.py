@@ -97,6 +97,10 @@ def main(argv=None):
     parsers['init'].add_argument('--archive_paths', nargs='+',
                                  dest='archive_paths',
                                  help='directories to check')
+    group = parsers['show_conf'].add_mutually_exclusive_group()
+    group.add_argument('--log_file', action='store_true')
+    group.add_argument('--pid_file', action='store_true')
+    group.add_argument('--dir', action='store_true')
 
     # add CHECKER_DIR config_dir to the end of each parser
     # will show up at bottom of the help this way
@@ -115,14 +119,17 @@ def main(argv=None):
     if sys.argv[1] == 'init':
         return init(argv)
 
+    # will fail if the conf does not parse
     conf = _parse_conf(argv)
 
+    # start to set up daemon
     detach = True
     if 'detach' in argv:
         detach = argv.detach
     if sys.argv[1] == 'update':
         detach = False
 
+    # callbacks for daemon
     def main_loop_wrapper():
         # nested here to gain access to `conf`
         log_nice(conf)
@@ -350,6 +357,15 @@ def _parse_conf(args):
 
 
 def show_conf(conf, ____):
+    if conf.args.log_file:
+        print(conf.daemon.log)
+        exit(0)
+    if conf.args.pid_file:
+        print(conf.daemon.pid)
+        exit(0)
+    if conf.args.dir:
+        print(os.path.abspath(conf.args.config_dir))
+        exit(0)
     print()
     print('cursory check of {0} {1} config in "{2}" looks OK'.format(
         APP_NAME, __version__, conf.args.config_dir)
@@ -358,9 +374,9 @@ def show_conf(conf, ____):
     print('\t{0}'.format(conf.conf_file))
     print("pid file")
     print('\t{0}'.format(conf.daemon.pid))
-    print("pid log")
+    print("log file")
     print('\t{0}'.format(conf.daemon.log))
-    print("archive directories")
+    print("archive paths")
     for d in conf.data['archive_paths']:
         missing = ''
         if not(os.path.isdir(d) or os.path.isfile(d)):
