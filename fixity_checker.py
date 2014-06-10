@@ -69,6 +69,7 @@ def main(argv=None):
         ('stop', 'stops the checker server'),
         ('status', 'produces a report of the server status'),
         ('errors', 'reports on any fixity errors that have been found'),
+        ('extent', 'files / bytes under observation'),
         ('restart', 'stop follow by a start'),
         ('update', 'updates fixity info (server must be stopped)'),
         ('json_report', 'json serialization of application data'),
@@ -417,6 +418,7 @@ def errors(conf, daemon):
         exit(1)
     else:
         print("no errors found - OK")
+        print()
         errors.close()
 
 
@@ -432,6 +434,26 @@ def json_report(conf, daemon):
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
     fixity_checker_report(observations, conf.args.report_directory[0])
     observations.close()
+
+
+def extent(conf, daemon):
+    observations = Shove(conf.data['data_url'], protocol=2, flag='r')
+    count = namedtuple('Counts', 'files, bytes')
+    count.bytes = count.files = 0
+    for key, value in list(observations.items()):
+        count.files = int(count.files) + 1
+        count.bytes = count.bytes + value['size']
+    observations.close()
+    def sizeof_fmt(num):
+        # http://stackoverflow.com/a/1094933/1763984
+        for x in ['bytes','KiB','MiB','GiB']:
+            if num < 1024.0:
+                return "%3.1f%s" % (num, x)
+            num /= 1024.0
+        return "%3.1f%s" % (num, 'TiB')
+    print('observing {0} files {1} bytes ({2})'.format(
+        count.files, count.bytes, sizeof_fmt(count.bytes)))
+    print()
 
 
 def json_load(conf, daemon):

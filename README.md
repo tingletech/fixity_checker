@@ -29,6 +29,7 @@ positional arguments:
     stop                stops the checker server
     status              produces a report of the server status
     errors              reports on any fixity errors that have been found
+    extent              files / bytes under observation
     restart             stop follow by a start
     update              updates fixity info (server must be stopped)
     json_report         json serialization of application data
