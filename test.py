@@ -69,7 +69,7 @@ class TestCommand(unittest.TestCase):
         self.owd=os.getcwd()
         os.chdir(self.workspace)
         self.env = TestFileEnvironment(
-            os.path.join(self.workspace, 'env')
+            os.path.join(self.workspace, 'env'),
         )
 
     def tearDown(self):
@@ -80,10 +80,10 @@ class TestCommand(unittest.TestCase):
         command = os.path.join(self.owd, 'fixity_checker.py')
         result = self.env.run(command, expect_error=True)
         self.assertTrue(result.stderr.startswith('usage'))
-        self.env.run(command, 'init', '--archive_paths', './test-data/', '-d', 'xx')
-        self.env.run(command, 'start', expect_stderr=True)
-        time.sleep(0.25)
-        # self.env.run(command, 'status', expect_stderr=True)
-        self.env.run(command, 'restart', expect_stderr=True)
-        self.env.run(command, 'stop', expect_stderr=True)
+        test_data = os.path.join(self.workspace,'test-data')
+        self.env.run(command, 'init', '--archive_paths', test_data, '-d', './xx')
+        self.env.run(command, 'start', '-d', './xx', expect_stderr=True)
+        self.env.run(command, 'status', '-d', './xx', expect_stderr=True)
+        self.env.run(command, 'restart', '-d', 'xx', expect_stderr=True)
+        self.env.run(command, 'stop', '-d', 'xx', expect_stderr=True)
 
