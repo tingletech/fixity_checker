@@ -357,13 +357,13 @@ def _parse_conf(args):
 
 
 def show_conf(conf, ____):
-    if conf.args.log_file:
+    if 'log_file' in conf.args:
         print(conf.daemon.log)
         exit(0)
-    if conf.args.pid_file:
+    if 'pid_file' in conf.args:
         print(conf.daemon.pid)
         exit(0)
-    if conf.args.dir:
+    if 'dir' in conf.args:
         print(os.path.abspath(conf.args.config_dir))
         exit(0)
     print()
