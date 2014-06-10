@@ -358,13 +358,13 @@ def _parse_conf(args):
 
 
 def show_conf(conf, ____):
-    if 'log_file' in conf.args:
+    if 'log_file' in conf.args and conf.args.log_file:
         print(conf.daemon.log)
         exit(0)
-    if 'pid_file' in conf.args:
+    if 'pid_file' in conf.args and conf.args.pid_file:
         print(conf.daemon.pid)
         exit(0)
-    if 'dir' in conf.args:
+    if 'dir' in conf.args and conf.args.dir:
         print(os.path.abspath(conf.args.config_dir))
         exit(0)
     print()
@@ -438,11 +438,18 @@ def json_report(conf, daemon):
 
 def extent(conf, daemon):
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
-    count = namedtuple('Counts', 'files, bytes')
-    count.bytes = count.files = 0
+    count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
+    count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0
+    dedup = {}
     for key, value in list(observations.items()):
         count.files = int(count.files) + 1
         count.bytes = count.bytes + value['size']
+        hash_a = conf.data['hashlib'][0]
+        hash_v = value[hash_a]
+        if not(hash_v in dedup):
+            count.uniqueFiles = count.uniqueFiles + 1
+            count.uniqueBytes = count.uniqueBytes + value['size']
+        dedup[hash_v] = value['size']
     observations.close()
     def sizeof_fmt(num):
         # http://stackoverflow.com/a/1094933/1763984
@@ -451,8 +458,9 @@ def extent(conf, daemon):
                 return "%3.1f%s" % (num, x)
             num /= 1024.0
         return "%3.1f%s" % (num, 'TiB')
-    print('observing {0} files {1} bytes ({2})'.format(
-        count.files, count.bytes, sizeof_fmt(count.bytes)))
+    print('observing {0} files {1} bytes ({2}) | unique {3} files {4} bytes ({5})'.format(
+        count.files, count.bytes, sizeof_fmt(count.bytes),
+        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes)))
     print()
 
 
