@@ -22,6 +22,7 @@ from shove import Shove
 import hashlib
 import psutil
 import cStringIO
+import urlparse
 
 # raw_import() in 2 -> import() in 3
 try:
@@ -32,7 +33,13 @@ except NameError:
 # use readline if it is available for interactive input in init
 try:
     import readline   # noqa
-except NameError:
+except ImportError:
+    pass
+
+try:
+    import boto
+    import boto.s3.key
+except ImportError:
     pass
 
 # ⏣ ⏣ ⏣ ⏣
@@ -202,7 +209,11 @@ def checker(conf):
     # check for missing files
     logging.info('looking for missing files')
     for ____, value in list(observations.items()):
-        if not os.path.isfile(value['path']):
+        if value['path'].startswith('s3://'):
+            # TODO: check to make sure this file is still on s3
+            pass
+            # TODO: check to make sure this file is still on s3
+        elif not os.path.isfile(value['path']):
             track_error(value['path'],
                         "{0} no longer exists or is not a file".format(value['path']),
                         errors)
@@ -564,7 +575,9 @@ def valid_path(string):
 
 def check_one_arg(filein, observations, hash, update, conf, errors):
     """check if the arg is a file or directory, walk directory for files"""
-    if os.path.isdir(filein):
+    if filein.startswith('s3://'):
+        check_s3_url(filein, observations, hash, update, conf, errors)
+    elif os.path.isdir(filein):
         for root, ____, files in os.walk(filein):
             for f in files:
                 fullpath = os.path.join(root, f)
@@ -573,16 +586,48 @@ def check_one_arg(filein, observations, hash, update, conf, errors):
         check_one_file(filein, observations, hash, update, conf, errors)
 
 
+def check_s3_url(bucketurl, observations, hash, update, conf, errors):
+    s3 = boto.connect_s3()
+    # SplitResult(scheme='s3', netloc='test.pdf', path='/dkd', query='', fragment='')
+    parts = urlparse.urlsplit(bucketurl)  
+    bucket = s3.lookup(parts.netloc)
+    #bucket = s3.get_bucket(parts.netloc)
+    for key in bucket.list():
+        # look for pdfs that match the user supplied path
+        if not parts.path or key.name.startswith(parts.path[1:]):
+            # The Key object in boto, which represents on object in S3,
+            # can be used like an iterator http://stackoverflow.com/a/7625197/1763984
+            check_one_file(key, observations, hash, update, conf, errors)
+
+
 def check_one_file(filein, observations, hash, update, conf, errors):
-    """check file one file against our memories"""
+    """check one file (or s3 key) against our memories"""
     startTime = time.time()
-    filename = os.path.abspath(filein)
-    logging.info('{0}'.format(filename))
-    # normalize filename, take hash for key
+
+    filename = ""
+    s3 = False
+    # do I have a local filesystem path or s3 bucket key?
+    if type(filein) is unicode:
+        filename = os.path.abspath(filein)
+    try:
+        if type(filein) is boto.s3.key.Key:
+            s3 = True
+            filename = 's3://{0}/{1}'.format(filein.bucket.name,
+                                            filein.name)
+    except NameError:
+        pass
+
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
+    logging.info('{0}'.format(filename))
+
+    # normalize filename, take hash for key
     logging.debug('sha224 of path {0}'.format(filename_key))
 
-    seen_now = analyze_file(filename, hash)
+    if s3:
+        seen_now = analyze_s3_key(filein, hash)
+    else:
+        seen_now = analyze_file(filename, hash)
+
     logging.debug('seen_now {0}'.format(seen_now))
 
     if filename_key in observations and not update:
@@ -649,6 +694,24 @@ def analyze_file(filename, hash):
         'size': os.path.getsize(filename),
         hasher.name: hasher.hexdigest(),
         'path': filename
+    }
+
+
+def analyze_s3_key(key, hashtype):
+    """ returns a dict of hash and size in bytes """
+    hasher = hashlib.new(hashtype)
+    BLOCKSIZE = 1024 * hasher.block_size
+    buf = key.read(BLOCKSIZE)
+    while len(buf) > 0:
+        hasher.update(buf)
+        buf = key.read(BLOCKSIZE)
+    # in the future, add os.POSIX_FADV_DONTNEED support
+    # needs python 3 and newer linux kernel
+    # http://www.gossamer-threads.com/lists/python/python/1063241
+    return {
+        'size': key.size,
+        hasher.name: hasher.hexdigest(),
+        'path': 's3://{0}/{1}'.format(key.bucket.name, key.name),
     }
 
 
