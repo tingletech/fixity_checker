@@ -94,8 +94,9 @@ def main(argv=None):
         parsers[command] = subparsers.add_parser(command,
                                                  help=help,
                                                  description=help)
-        # map sub command to the function named _command_ in this file
-        parsers[command].set_defaults(func=getattr(thismodule, command))
+        if command not in ['start', 'stop', 'restart', 'update']:
+            # map sub command to the function named _command_ in this file
+            parsers[command].set_defaults(func=getattr(thismodule, command))
 
     # some subcommands need custom arguments
     parsers['start'].add_argument('--no-detach', dest='detach', action='store_false')
@@ -433,13 +434,6 @@ def errors(conf, daemon):
         errors.close()
 
 
-def update(conf, daemon):
-    """ alter the truth to clear an error """
-    # check if the server is running; if so, bail
-    pp(conf.args)
-    print("not implimented")
-
-
 def json_report(conf, daemon):
     # persisted dict interface for long term memory
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
@@ -478,18 +472,6 @@ def extent(conf, daemon):
 def json_load(conf, daemon):
     pp(conf.args)
     print("not implimented")
-
-
-def start():
-    pass
-
-
-def stop():
-    pass
-
-
-def restart():
-    pass
 
 
 # ⌦
