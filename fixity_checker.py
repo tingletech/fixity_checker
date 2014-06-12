@@ -23,6 +23,7 @@ import hashlib
 import psutil
 import cStringIO
 import urlparse
+import gc
 
 # raw_import() in 2 -> import() in 3
 try:
@@ -218,12 +219,11 @@ def checker(conf):
             track_error(value['path'],
                         "{0} no longer exists or is not a file".format(value['path']),
                         errors)
-
     # output json reports
     fixity_checker_report(observations, conf.app.json_dir)
     observations.close()
     logging.info('writting reports at {0}'.format(conf.app.json_dir))
-
+    gc.collect()
     elapsedLoopTime = time.time() - startLoopTime
     # logging.info("elapsedLoopTime {0} {1} files {2} bytes".format(elapsedLoopTime))
     logging.info("elapsedLoopTime {0}".format(elapsedLoopTime))
@@ -589,7 +589,7 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     filename = ""
     s3 = False
     # do I have a local filesystem path or s3 bucket key?
-    if type(filein) is unicode:
+    if type(filein) in [unicode, str]:
         filename = os.path.abspath(filein)
     try:
         if type(filein) is boto.s3.key.Key:
@@ -598,7 +598,6 @@ def check_one_file(filein, observations, hash, update, conf, errors):
                                             filein.name)
     except NameError:
         pass
-
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
     logging.info('{0}'.format(filename))
 
@@ -728,14 +727,15 @@ def fixity_checker_report(observations, outputdir):
     _mkdir(outputdir)
     # sort into bins for transport
     for key, value in observations.iteritems():
-        shard_key = key[:2]
-        shards[shard_key].update({key: value})
+        # first two characters are the key to the "shard"
+        shards[key[:2]].update({key: value})
     # write out json for each bin
     for key, value in shards.iteritems():
         out = os.path.join(outputdir, ''.join([key, '.json']))
         with open(out, 'w') as outfile:
             json.dump(shards[key], outfile, sort_keys=True,
                       indent=4, separators=(',', ': '))
+    del shards
 
 
 def _mkdir(newdir):
