@@ -209,7 +209,7 @@ def checker(conf):
 
     # check for missing files
     logging.info('looking for missing files')
-    for ____, value in list(observations.items()):
+    for ____, value in observations.iteritems():
         if value['path'].startswith('s3://'):
             # TODO: check to make sure this file is still on s3
             pass
@@ -424,7 +424,7 @@ def errors(conf, daemon):
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
     if any(errors):
         print("errors found")
-        for path, error in list(errors.items()):
+        for path, error in errors.iteritems():
             pp(error)
         errors.close()
         exit(1)
@@ -446,7 +446,7 @@ def extent(conf, daemon):
     count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
     count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0
     dedup = {}
-    for key, value in list(observations.items()):
+    for key, value in observations.iteritems():
         count.files = int(count.files) + 1
         count.bytes = count.bytes + value['size']
         hash_a = conf.data['hashlib'][0]
@@ -727,11 +727,11 @@ def fixity_checker_report(observations, outputdir):
     shards = defaultdict(dict)
     _mkdir(outputdir)
     # sort into bins for transport
-    for key, value in list(observations.items()):
+    for key, value in observations.iteritems():
         shard_key = key[:2]
         shards[shard_key].update({key: value})
     # write out json for each bin
-    for key, value in list(shards.items()):
+    for key, value in shards.iteritems():
         out = os.path.join(outputdir, ''.join([key, '.json']))
         with open(out, 'w') as outfile:
             json.dump(shards[key], outfile, sort_keys=True,
