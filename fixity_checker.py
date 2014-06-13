@@ -446,8 +446,24 @@ def extent(conf, daemon):
     count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
     count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0
     dedup = {}
+
+    # this can take a while, let the user know we are working on it
+    # http://stackoverflow.com/a/4995896/1763984
+    def spinning_cursor():
+        while True:
+            for cursor in '|/-\\':
+                yield cursor
+    def spin_cursor(spinner):
+        if sys.stdout.isatty():  # don't pollute pipes
+            sys.stdout.write(spinner.next())
+            sys.stdout.write('\b')
+            sys.stdout.flush()
+    spinner = spinning_cursor()
+
     for key, value in observations.iteritems():
         count.files = int(count.files) + 1
+        if count.files % 100 == 0:
+            spin_cursor(spinner)
         count.bytes = count.bytes + value['size']
         hash_a = conf.data['hashlib'][0]
         hash_v = value[hash_a]
@@ -456,6 +472,7 @@ def extent(conf, daemon):
             count.uniqueBytes = count.uniqueBytes + value['size']
         dedup[hash_v] = value['size']
     observations.close()
+
     def sizeof_fmt(num):
         # http://stackoverflow.com/a/1094933/1763984
         for x in ['bytes','KiB','MiB','GiB']:
