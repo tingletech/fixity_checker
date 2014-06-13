@@ -728,7 +728,7 @@ class NapContext(object):
         elapsed = time.time() - self.__start
         load = os.getloadavg()[0]
         nap = load * elapsed * self.sleepiness
-        cpu_wait = psutil.cpu_times_percent(0.1)
+        cpu_wait = psutil.cpu_times_percent(0.0)
         if 'iowait' in cpu_wait:  #  Look at iowait on Linux
             nap = nap ** ( 1 + cpu_wait.iowait )
 
