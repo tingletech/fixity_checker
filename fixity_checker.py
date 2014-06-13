@@ -584,8 +584,7 @@ def check_s3_url(bucketurl, observations, hash, update, conf, errors):
 
 def check_one_file(filein, observations, hash, update, conf, errors):
     """check one file (or s3 key) against our memories"""
-    startTime = time.time()
-
+    nap = NapContext(conf.data['sleepiness'])
     filename = ""
     s3 = False
     # do I have a local filesystem path or s3 bucket key?
@@ -605,9 +604,9 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     logging.debug('sha224 of path {0}'.format(filename_key))
 
     if s3:
-        seen_now = analyze_s3_key(filein, hash)
+        seen_now = analyze_s3_key(filein, hash, nap)
     else:
-        seen_now = analyze_file(filename, hash)
+        seen_now = analyze_file(filename, hash, nap)
 
     logging.debug('seen_now {0}'.format(seen_now))
 
@@ -631,13 +630,6 @@ def check_one_file(filein, observations, hash, update, conf, errors):
         observations.sync()
         logging.info('update observations')
 
-    # take a nap, for longer if the system load is high
-    elapsedTime = time.time() - startTime
-    load = os.getloadavg()[0]
-    nap = load * elapsedTime * conf.data['sleepiness']
-    logging.debug('napping for {0}, load {1}'.format(nap, load))
-    time.sleep(nap)
-
 
 def compare_sightings(now, before, news={}):
     """ return False if sightings differ, otherwise True """
@@ -658,7 +650,7 @@ def compare_sightings(now, before, news={}):
     return True
 
 
-def analyze_file(filename, hash):
+def analyze_file(filename, hash, nap):
     """ returns a dict of hash and size in bytes """
     # http://www.pythoncentral.io/hashing-files-with-python/
     hasher = hashlib.new(hash)
@@ -666,8 +658,9 @@ def analyze_file(filename, hash):
     with open(filename, 'rb') as afile:
         buf = afile.read(BLOCKSIZE)
         while len(buf) > 0:
-            hasher.update(buf)
-            buf = afile.read(BLOCKSIZE)
+            with nap:
+                hasher.update(buf)
+                buf = afile.read(BLOCKSIZE)
         # in the future, add os.POSIX_FADV_DONTNEED support
         # needs python 3 and newer linux kernel
         # http://www.gossamer-threads.com/lists/python/python/1063241
@@ -678,14 +671,15 @@ def analyze_file(filename, hash):
     }
 
 
-def analyze_s3_key(key, hashtype):
+def analyze_s3_key(key, hashtype, nap):
     """ returns a dict of hash and size in bytes """
     hasher = hashlib.new(hashtype)
     BLOCKSIZE = 1024 * hasher.block_size
     buf = key.read(BLOCKSIZE)
     while len(buf) > 0:
-        hasher.update(buf)
-        buf = key.read(BLOCKSIZE)
+        with nap:
+            hasher.update(buf)
+            buf = key.read(BLOCKSIZE)
     # in the future, add os.POSIX_FADV_DONTNEED support
     # needs python 3 and newer linux kernel
     # http://www.gossamer-threads.com/lists/python/python/1063241
@@ -718,6 +712,27 @@ def log_nice(conf):
         p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
 
     os.nice(10)
+
+
+class NapContext(object):
+    """context manager for system-load sensitive napping"""
+    # http://stackoverflow.com/a/1685337/1763984
+    def __init__(self, sleepiness=1):
+        self.sleepiness = sleepiness
+
+    def __enter__(self):
+        self.__start = time.time()
+
+    def __exit__(self, type, value, traceback):
+        # dynamic nap factor
+        elapsed = time.time() - self.__start
+        load = os.getloadavg()[0]
+        nap = load * elapsed * self.sleepiness
+        cpu_wait = psutil.cpu_times_percent(0.1)
+        if 'iowait' in cpu_wait:  #  Look at iowait on Linux
+            nap = nap ** ( 1 + cpu_wait )
+
+        time.sleep(nap)
 
 
 def fixity_checker_report(observations, outputdir):
