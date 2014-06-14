@@ -88,4 +88,5 @@ class TestCommand(unittest.TestCase):
         self.env.run(command, 'status', '-d', './xx', expect_stderr=True)
         self.env.run(command, 'restart', '-d', 'xx', expect_stderr=True)
         self.env.run(command, 'stop', '-d', 'xx', expect_stderr=True)
+        self.env.run(command, 'update', 'test-data/README', '-d', 'xx', expect_stderr=True)
 
