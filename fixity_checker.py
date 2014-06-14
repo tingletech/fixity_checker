@@ -100,7 +100,9 @@ def main(argv=None):
             parsers[command].set_defaults(func=getattr(thismodule, command))
 
     # some subcommands need custom arguments
-    parsers['start'].add_argument('--no-detach', dest='detach', action='store_false')
+    parsers['start'].add_argument(
+        '--no-detach', dest='detach', action='store_false'
+    )
     parsers['update'].add_argument('file', nargs='+', help='file(s) to update')
     parsers['json_report'].add_argument('report_directory', nargs=1)
     parsers['json_load'].add_argument('report_directory', nargs=1)
@@ -148,7 +150,7 @@ def main(argv=None):
             checker(conf)
 
     def cb_shutdown(message, code):
-        # don't have access to observations or errror here; pull these out 
+        # don't have access to observations or errror here; pull these out
         # a level so we can close them?
         if conf.args.subparser_name != 'update':
             logging.info('Daemon is stopping')
@@ -184,14 +186,16 @@ def checker(conf):
 
     # %%
     # %% `update` the database and quit
-    # %% 
+    # %%
     if conf.args.subparser_name == 'update':
         logging.warning('altering memories')
         for f in conf.args.file:
             path = os.path.abspath(f)
             print(path)
             for hashtype in conf.data['hashlib']:
-                check_one_file(path, observations, hashtype, True, conf, errors)
+                check_one_file(
+                    path, observations, hashtype, True, conf, errors
+                )
                 observations.sync()
             filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
             errors.pop(filename_key, None)
@@ -202,7 +206,7 @@ def checker(conf):
 
     # %%
     # %% not an `update`, continue down the loop
-    # %% 
+    # %%
 
     # TODO; set up var for counts
 
@@ -215,7 +219,9 @@ def checker(conf):
             assert filepath, "arguments can't be empty"
             filepath = filepath+''  # http://fomori.org/blog/?p=486
 
-            check_one_arg(filepath, observations, hashtype, False, conf, errors)
+            check_one_arg(
+                filepath, observations, hashtype, False, conf, errors
+            )
 
     # %% check for missing files
     logging.info('looking for missing files')
@@ -225,9 +231,11 @@ def checker(conf):
             pass
             # TODO: check to make sure this file is still on s3
         elif not os.path.isfile(value['path']):
-            track_error(value['path'],
-                        "{0} no longer exists or is not a file".format(value['path']),
-                        errors)
+            track_error(
+                value['path'],
+                "{0} no longer exists or is not a file".format(value['path']),
+                errors
+            )
 
     # %% output json reports
     fixity_checker_report(observations, conf.app.json_dir)
@@ -237,7 +245,6 @@ def checker(conf):
     # %% end of loop
     gc.collect()
     elapsedLoopTime = time.time() - startLoopTime
-    # logging.info("elapsedLoopTime {0} {1} files {2} bytes".format(elapsedLoopTime))
     logging.info("elapsedLoopTime {0}".format(elapsedLoopTime))
 
     if elapsedLoopTime < conf.data['min_loop']:
@@ -249,17 +256,19 @@ def checker(conf):
 def check_one_arg(filein, observations, hash, update, conf, errors):
     """check if the arg is a file or directory, walk directory for files"""
     if filein.startswith('s3://'):
-        # SplitResult(scheme='s3', netloc='test.pdf', path='/dkd', query='', fragment='')
-        parts = urlparse.urlsplit(filein)  
+        parts = urlparse.urlsplit(filein)
         bucket = boto.connect_s3().lookup(parts.netloc)
-        for key in bucket.list():  # look for pdfs that match the user supplied path
+        for key in bucket.list():
+            # look for pdfs that match the user supplied path
             if not parts.path or key.name.startswith(parts.path[1:]):
                 check_one_file(key, observations, hash, update, conf, errors)
     elif os.path.isdir(filein):
         for root, ____, files in os.walk(filein):
             for f in files:
                 fullpath = os.path.join(root, f)
-                check_one_file(fullpath, observations, hash, update, conf, errors)
+                check_one_file(
+                    fullpath, observations, hash, update, conf, errors
+                )
     else:
         check_one_file(filein, observations, hash, update, conf, errors)
 
@@ -276,7 +285,7 @@ def check_one_file(filein, observations, hash, update, conf, errors):
         if type(filein) is boto.s3.key.Key:
             s3 = True
             filename = 's3://{0}/{1}'.format(filein.bucket.name,
-                                            filein.name)
+                                             filein.name)
     except NameError:
         pass
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
@@ -395,7 +404,7 @@ def fixity_checker_report(observations, outputdir):
 def track_error(path, message, errors):
     logging.warning(message)
     filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
-    note = { message: True }
+    note = {message: True}
     if filename_key in errors:
         errors[filename_key].update(note)
     else:
@@ -417,8 +426,8 @@ def init(args):
         "{0} directory specified for init must not exist".format(conf)
 
     data_url_default = 'file://{0}/'.format(os.path.abspath(
-                                           os.path.join(conf,
-                                                        'fixity_data_raw')))
+                                            os.path.join(conf,
+                                                         'fixity_data_raw')))
 
     if args.archive_paths:
         directories = [os.path.abspath(x) for x in args.archive_paths]
@@ -456,7 +465,7 @@ def init(args):
     hash = default(
         'Pick a hashlib',
         'sha512',
-        lambda x : x in hashlib_algorithms + ('',),
+        lambda x: x in hashlib_algorithms + ('',),
         ' '.join(hashlib_algorithms)
     )
     print(hash)
@@ -471,7 +480,7 @@ def _init(conf, directories, data_url, hash):
         '__name__': "{0}_{1}_conf".format(APP_NAME, __version__),
         'archive_paths': directories,
         'data_url': data_url,
-        'hashlib': [ hash ],
+        'hashlib': [hash],
         'loglevel': 'INFO',
         'min_loop': 43200,          # twice a day
         'sleepiness': 1
@@ -484,7 +493,7 @@ def _init(conf, directories, data_url, hash):
     ) as outfile:
         json.dump(data, outfile, sort_keys=True,
                   indent=4, separators=(',', ': '))
-    ## create .gitignore and activate(setting CHECKER_DIR)
+    # TODO create .gitignore and activate(setting CHECKER_DIR)
     with open(
         os.path.join(conf, 'activate'),
         'w',
@@ -509,8 +518,9 @@ def _parse_conf(args):
     assert 'archive_paths' in data, \
         "'archive_paths': [] not found in {0}".format(conf_file)
 
-    # build up nested named tuple to hold parsed config 
-    app_config = namedtuple('fixity',
+    # build up nested named tuple to hold parsed config
+    app_config = namedtuple(
+        'fixity',
         'json_dir, conf_file, errors',
     )
     daemon_config = namedtuple('FixityDaemon', 'pid, log', )
@@ -520,7 +530,7 @@ def _parse_conf(args):
         os.path.join(conf, 'logs', '{0}.log'.format(APP_NAME)))
     app_config.json_dir = os.path.abspath(os.path.join(conf, 'json_dir'))
     app_config.errors = os.path.abspath(os.path.join(conf, 'errors'))
-    c = namedtuple('FixityConfig','app, daemon, args, data, conf_file')
+    c = namedtuple('FixityConfig', 'app, daemon, args, data, conf_file')
     c.app = app_config
     c.daemon = daemon_config
     c.args = args
@@ -619,6 +629,7 @@ def extent(conf, daemon):
         while True:
             for cursor in '|/-\\':
                 yield cursor
+
     def spin_cursor(spinner):
         if sys.stdout.isatty():  # don't pollute pipes
             sys.stdout.write(spinner.next())
@@ -641,12 +652,13 @@ def extent(conf, daemon):
 
     def sizeof_fmt(num):
         # http://stackoverflow.com/a/1094933/1763984
-        for x in ['bytes','KiB','MiB','GiB']:
+        for x in ['bytes', 'KiB', 'MiB', 'GiB']:
             if num < 1024.0:
                 return "%3.1f%s" % (num, x)
             num /= 1024.0
         return "%3.1f%s" % (num, 'TiB')
-    print('observing {0} files {1} bytes ({2}) | unique {3} files {4} bytes ({5})'.format(
+    print('observing {0} files {1} bytes ({2}) | \
+        unique {3} files {4} bytes ({5})'.format(
         count.files, count.bytes, sizeof_fmt(count.bytes),
         count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes)))
     print()
@@ -742,7 +754,9 @@ def log_nice(conf):
 
     logger = logging.getLogger()
     logger.setLevel(numeric_level)
-    rh = logging.handlers.TimedRotatingFileHandler(conf.daemon.log, when='midnight',)
+    rh = logging.handlers.TimedRotatingFileHandler(
+        conf.daemon.log, when='midnight',
+    )
     rh.setLevel(numeric_level)
     formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
     rh.setFormatter(formatter)
@@ -772,8 +786,8 @@ class NapContext(object):
         load = os.getloadavg()[0]
         nap = load * elapsed * self.sleepiness
         cpu_wait = psutil.cpu_times_percent(0.0)
-        if 'iowait' in cpu_wait:  #  Look at iowait on Linux
-            nap = nap * ( 1 + cpu_wait.iowait ) ** 2
+        if 'iowait' in cpu_wait:  # Look at iowait on Linux
+            nap = nap * (1 + cpu_wait.iowait) ** 2
 
         time.sleep(nap)
 
