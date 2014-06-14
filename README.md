@@ -15,10 +15,10 @@ _for Python versions 2.6, 2.7, <s>3.3, 3.4</s>_
 
 ## install
 ```
-pip install https://github.com/tingletech/fixity/archive/master.tar.gz
+pip install https://github.com/tingletech/fixity_checker/archive/master.tar.gz
 ```
 
-[![Build Status](https://travis-ci.org/tingletech/fixity.svg)](https://travis-ci.org/tingletech/fixity)
+[![Build Status](https://travis-ci.org/tingletech/fixity_checker.svg)](https://travis-ci.org/tingletech/fixity_checker)
 
 ## use
 
@@ -54,4 +54,4 @@ to specify application and server configuration.
 
 # Related work
 
-see https://github.com/tingletech/fixity/wiki
+see https://github.com/tingletech/fixity_checker/wiki
