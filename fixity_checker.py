@@ -9,13 +9,21 @@ from __future__ import (absolute_import, division,
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
 
-# Brian Tingle, Oakland, California
-#
 # I was trying write this in a way that it would keep
 # with python 2 or python 3.  Right now it only works with
 # 2, mainly because daemonocle is python 2 only.  Will
 # need to use `six` to make it work with 2 and 3 and use
 # itertools with both.
+#
+# I went a little crazy with unicode characters, ⌦  ⏢  ⎄  
+# are used to group comments at a similar heading,
+# ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
+# goal is to make it easy to scan, since this is a long code.
+#
+# Please [let me know](https://github.com/tingletech/fixity_checker/issues)
+# if you have any issues, ideas, or suggestions.
+#
+# ―Brian Tingle, Oakland, California
 import daemonocle
 import argparse
 import pkg_resources  # part of setuptools
@@ -35,7 +43,7 @@ import cStringIO
 import urlparse
 import gc
 
-# `raw_input()` in 2 -> `input()` in 3
+# user tty input is `raw_input()` in 2 -> `input()` in 3
 try:
     input = raw_input
 except NameError:
@@ -295,7 +303,7 @@ def check_one_arg(filein, observations, hash, update, conf, errors):
                 )
     elif filein.startswith('s3://'):
         parts = urlparse.urlsplit(filein)
-        # https://docs.python.org/2/library/urlparse.html#urlparse-result-object
+        # [urlparse-result-object](https://docs.python.org/2/library/urlparse.html#urlparse-result-object)
         bucket = boto.connect_s3().lookup(parts.netloc)
         for key in bucket.list():
             # look for files that match the user supplied path,
@@ -413,7 +421,7 @@ def analyze_s3_key(key, hashtype, nap):
     """ returns a dict of hash and size in bytes """
     hasher = hashlib.new(hashtype)
     BLOCKSIZE = 1024 * hasher.block_size
-    # http://boto.readthedocs.org/en/latest/ref/s3.html#boto.s3.key.Key.read
+    # [boto.s3.key.Key.read](http://boto.readthedocs.org/en/latest/ref/s3.html#boto.s3.key.Key.read)
     buf = key.read(BLOCKSIZE)  # first buffer read does not get a nap
     while len(buf) > 0:
         with nap:
@@ -623,7 +631,7 @@ def show_conf(conf, ____):
 
 def status(conf, daemon):
     """daemon and fixity status report"""
-    # daemonocle exit's 0 when 'not running', capture STDOUT
+    # daemonocle exits `0` when 'not running', capture STDOUT
     # http://stackoverflow.com/a/1983450/1763984
     def captureSTDOUT(thefun, *a, **k):
         savstdout = sys.stdout
@@ -639,7 +647,7 @@ def status(conf, daemon):
     print(output)
     if 'not running' in output:
         exit(2)
-        # ⏏  exit the program
+        # ⏏  exit the program with an error
 
 
 def errors(conf, daemon):
@@ -652,7 +660,7 @@ def errors(conf, daemon):
             pp(error)
         errors.close()
         exit(1)
-        # ⏏  exit the program
+        # ⏏  exit the program with an error
     else:
         print("no errors found - OK")
         print()
@@ -793,7 +801,7 @@ def confirm_or_die(string):
         return True
     elif decline:
         sys.exit(1)
-        # ⏏  exit the program
+        # ⏏  exit the program with an error
     else:
         print('please answer yes or no, [ENTER] for yes')
 
