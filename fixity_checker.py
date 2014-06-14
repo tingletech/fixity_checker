@@ -6,16 +6,16 @@ server daemon
 """
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
-# ⏣ ⏣ `APP_NAME` ⏣ ⏣
+# ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
 
 # Brian Tingle, Oakland, California
 #
-# was trying write this in a way that it would keep
+# I was trying write this in a way that it would keep
 # with python 2 or python 3.  Right now it only works with
-# 2, mainly because daemonocle is python 2 only.  will
+# 2, mainly because daemonocle is python 2 only.  Will
 # need to use `six` to make it work with 2 and 3 and use
-# itertools with both
+# itertools with both.
 import daemonocle
 import argparse
 import pkg_resources  # part of setuptools
