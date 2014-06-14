@@ -6,9 +6,16 @@ server daemon
 """
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
-# was trying to keep write this in a way that it would work 
+# ⏣ ⏣ `APP_NAME` ⏣ ⏣
+APP_NAME = 'fixity_checker'
+
+# Brian Tingle, Oakland, California
+#
+# was trying write this in a way that it would keep
 # with python 2 or python 3.  Right now it only works with
-# 2, mainly because daemonocle is python 2 only
+# 2, mainly because daemonocle is python 2 only.  will
+# need to use `six` to make it work with 2 and 3 and use
+# itertools with both
 import daemonocle
 import argparse
 import pkg_resources  # part of setuptools
@@ -28,13 +35,13 @@ import cStringIO
 import urlparse
 import gc
 
-# raw_input() in 2 -> input() in 3
+# `raw_input()` in 2 -> `input()` in 3
 try:
     input = raw_input
 except NameError:
     pass
 
-# use readline if it is available for interactive input in init
+# use `readline` if it is available for interactive input in init
 try:
     import readline   # noqa
 except ImportError:
@@ -46,9 +53,6 @@ try:
 except ImportError:
     pass
 
-# ⏣ ⏣ ⏣ ⏣
-APP_NAME = 'fixity_checker'
-# ⏣ ⏣ ⏣ ⏣
 # default directory for program files
 try:
     CHECKER_DIR = os.environ['CHECKER_DIR']
@@ -57,6 +61,11 @@ except KeyError:
 
 # read version out of setup.py
 __version__ = pkg_resources.require(APP_NAME)[0].version
+
+
+# ⌦
+# main function for command line interface
+# ⌦
 
 
 def main(argv=None):
@@ -69,10 +78,9 @@ def main(argv=None):
 
     subparsers = parser.add_subparsers(dest='subparser_name')
 
-    # **
-    # ** list all subcommands and what they do
-    # **
-
+    # ⏢
+    # list all subcommands and what they do
+    # ⏢
     commands = [
         ('init', 'runs and interactive script to configure a checker server'),
         ('show_conf', 'validate and show configuration options'),
@@ -87,9 +95,9 @@ def main(argv=None):
         ('json_load', 'load json serialization into application data'),
     ]
 
-    # **
-    # ** set up parsers for the subcommands
-    # **
+    # ⏢
+    # set up parsers for the subcommands
+    # ⏢
 
     parsers = {}
     thismodule = sys.modules[__name__]
@@ -123,9 +131,9 @@ def main(argv=None):
         parsers[command].add_argument('-d', dest='config_dir',
                                       default=CHECKER_DIR,
                                       help='configuration directory')
-    # **
-    # ** parser the arguments and dispatch to correct function
-    # **
+    # ⏢
+    # parse the arguments and dispatch to correct function
+    # ⏢
 
     if argv is None:
         argv = parser.parse_args()
@@ -146,7 +154,7 @@ def main(argv=None):
 
     # callbacks for daemon
     def main_loop_wrapper():
-        # nested here to gain access to `conf`
+        # `while True` wrapper nested here to gain access to parsed `conf`
         log_nice(conf)
         logging.info('Daemon is starting')
         while True:
@@ -167,19 +175,23 @@ def main(argv=None):
         detach=detach
     )
 
+    # use daemonocle for these subcommands
     if sys.argv[1] in ['start', 'stop', 'restart']:
-        # use daemonocle for these subcommands
         daemon.do_action(sys.argv[1])
+    # updates are a special case, note we are calling `start` on
+    # the daemon, so the daemon can't be running when we update
+
     elif sys.argv[1] == 'update':
-        # updates are a special case
         daemon.do_action('start')
+    # use argparse subcommands mapped to internal function names
+    # for any other commands
+
     else:
-        # use argparse subcommands
         return argv.func(conf, daemon)
 
 
 # ⌦
-# ⌦  file checking functions
+# main loop that runs as daemon
 # ⌦
 
 
@@ -191,13 +203,13 @@ def checker(conf):
     observations = Shove(conf.data['data_url'], protocol=2)
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
 
-    # %%
-    # %% `update` the database and quit (sever must be shut down)
-    # %%
+    # ☞
+    #   `update` the database and quit (main loop must not be running)
+    # ☞
     if conf.args.subparser_name == 'update':
         logging.warning('altering memories')
-	# right now this does not handle legit removals; only file
-	# changes
+        # right now this does not handle legit removals; only file
+        # changes TODO
         for f in conf.args.file:
             path = os.path.abspath(f)
             print(path)
@@ -213,27 +225,29 @@ def checker(conf):
         observations.close()
         errors.close()
         exit(0)
+        # ⏏  exit the program
 
-    # %%
-    # %% not an `update`, continue down the loop
-    # %%
+    # ☟
+    #  not an `update`, continue down the loop
+    # ☟
 
     # TODO; set up var for counts
 
-    # %% check the hashes
+    # ⎄ check the hashes
     # for each hash type
     for hashtype in conf.data['hashlib']:
         logging.info('starting {0} checks'.format(hashtype))
-        # for each command line argument
+        # for each `archive_paths` in configuration
         for filepath in conf.data['archive_paths']:
             assert filepath, "arguments can't be empty"
-            filepath = filepath+''  # http://fomori.org/blog/?p=486
+            # `+''` 2/3 unicode compatibility http://fomori.org/blog/?p=486
+            filepath = filepath+''
 
             check_one_arg(
                 filepath, observations, hashtype, False, conf, errors
             )
 
-    # %% check for missing files
+    # ⎄ check for missing files
     logging.info('looking for missing files')
     for ____, value in observations.iteritems():
         if value['path'].startswith('s3://'):
@@ -247,20 +261,27 @@ def checker(conf):
                 errors
             )
 
-    # %% output json reports
+    # ⎄ output json reports
     fixity_checker_report(observations, conf.app.json_dir)
     observations.close()
     logging.info('writting reports at {0}'.format(conf.app.json_dir))
 
-    # %% end of loop
+    # ⎄ end of loop
     gc.collect()
     elapsedLoopTime = time.time() - startLoopTime
     logging.info("elapsedLoopTime {0}".format(elapsedLoopTime))
 
     if elapsedLoopTime < conf.data['min_loop']:
+        # `min_loop` is the shortest time it should take to do a
+        # loop, take a nap if we are done too soon
         nap = conf.data['min_loop'] - elapsedLoopTime
         logging.info('sleeping for {0}'.format(nap))
         time.sleep(nap)
+
+
+# ⌦
+# file checking functions
+# ⌦
 
 
 def check_one_arg(filein, observations, hash, update, conf, errors):
@@ -297,11 +318,14 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     """
     nap = NapContext(conf.data['sleepiness'])
     filename = ""
+    # we don't know if boto will be installed, must be better way
+    # to detect if `filein` a string (ahem, unicode thingy) or an
+    # AWS key than the try/except here
     s3 = False
     # do I have a local filesystem path or s3 bucket key?
     if type(filein) in [unicode, str]:
         filename = os.path.abspath(filein)
-    try:  # we don't know if boto will be installed, must be better way
+    try:
         if type(filein) is boto.s3.key.Key:
             s3 = True
             filename = 's3://{0}/{1}'.format(filein.bucket.name,
@@ -323,8 +347,8 @@ def check_one_file(filein, observations, hash, update, conf, errors):
 
     logging.debug('seen_now {0}'.format(seen_now))
 
+    # make sure things match
     if filename_key in observations and not update:
-        # make sure things match
         news = {}
         looks_the_same = compare_sightings(
             seen_now, observations[filename_key], news
@@ -337,8 +361,8 @@ def check_one_file(filein, observations, hash, update, conf, errors):
             observations[filename_key] = update
             observations.sync()
             logging.debug('new memory {0}'.format(news))
+    # update observations
     else:
-        # update observations
         observations[filename_key] = seen_now
         observations.sync()
         logging.info('update observations')
@@ -350,6 +374,9 @@ def compare_sightings(now, before, news={}):
     if not now['size'] == before['size']:
         logging.error('sizes do not match')
         return False
+    # using `now.keys()` actually checks the size again,
+    # only one new hash key/value comes in at a time right now,
+    # but I guess we could compute multiple checksums at once
     for check in list(now.keys()):
         if check in before:
             if now[check] != before[check]:
@@ -369,14 +396,12 @@ def analyze_file(filename, hash, nap):
     hasher = hashlib.new(hash)
     BLOCKSIZE = 1024 * hasher.block_size
     with open(filename, 'rb') as afile:
+        # first buffer read does not get a nap
         buf = afile.read(BLOCKSIZE)
         while len(buf) > 0:
             with nap:
                 hasher.update(buf)
                 buf = afile.read(BLOCKSIZE)
-        # in the future, add os.POSIX_FADV_DONTNEED support
-        # needs python 3 and newer linux kernel
-        # http://www.gossamer-threads.com/lists/python/python/1063241
     return {
         'size': os.path.getsize(filename),
         hasher.name: hasher.hexdigest(),
@@ -388,16 +413,12 @@ def analyze_s3_key(key, hashtype, nap):
     """ returns a dict of hash and size in bytes """
     hasher = hashlib.new(hashtype)
     BLOCKSIZE = 1024 * hasher.block_size
-    # The Key object in boto, which represents on object in S3,
-    # can be used like an iterator http://stackoverflow.com/a/7625197/1763984
-    buf = key.read(BLOCKSIZE)
+    # http://boto.readthedocs.org/en/latest/ref/s3.html#boto.s3.key.Key.read
+    buf = key.read(BLOCKSIZE)  # first buffer read does not get a nap
     while len(buf) > 0:
         with nap:
             hasher.update(buf)
             buf = key.read(BLOCKSIZE)
-    # in the future, add os.POSIX_FADV_DONTNEED support
-    # needs python 3 and newer linux kernel
-    # http://www.gossamer-threads.com/lists/python/python/1063241
     return {
         'size': key.size,
         hasher.name: hasher.hexdigest(),
@@ -427,6 +448,10 @@ def track_error(path, message, errors):
     """log errors and note the problem files"""
     logging.warning(message)
     filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
+    # `errors` is a persisted dict (keyed on the sha244 of the file path).
+    # the values in errrors consist of a dict of messages
+    # if an error has already been seen, it will just be set to
+    # True again each time it is noted.
     note = {message: True}
     if filename_key in errors:
         errors[filename_key].update(note)
@@ -436,7 +461,7 @@ def track_error(path, message, errors):
 
 
 # ⌦
-# ⌦  following functions impliment subcommands
+# following functions impliment subcommands
 # ⌦
 
 
@@ -457,6 +482,7 @@ def init(args):
         _init(conf, directories, data_url_default, 'sha512')
         show_conf(_parse_conf(args), None)
         exit(0)
+        # ⏏  exit the program
 
     # **
     # ** run the install interactive script
@@ -567,12 +593,15 @@ def show_conf(conf, ____):
     if 'log_file' in conf.args and conf.args.log_file:
         print(conf.daemon.log)
         exit(0)
+        # ⏏  exit the program
     if 'pid_file' in conf.args and conf.args.pid_file:
         print(conf.daemon.pid)
         exit(0)
+        # ⏏  exit the program
     if 'dir' in conf.args and conf.args.dir:
         print(os.path.abspath(conf.args.config_dir))
         exit(0)
+        # ⏏  exit the program
     print()
     print('cursory check of {0} {1} config in "{2}" looks OK'.format(
         APP_NAME, __version__, conf.args.config_dir)
@@ -610,6 +639,7 @@ def status(conf, daemon):
     print(output)
     if 'not running' in output:
         exit(2)
+        # ⏏  exit the program
 
 
 def errors(conf, daemon):
@@ -622,6 +652,7 @@ def errors(conf, daemon):
             pp(error)
         errors.close()
         exit(1)
+        # ⏏  exit the program
     else:
         print("no errors found - OK")
         print()
@@ -636,6 +667,7 @@ def json_report(conf, daemon):
 
 
 def json_load(conf, daemon):
+    # TODO -- also add bagit and checkm loaders?
     pp(conf.args)
     print("not implimented")
 
@@ -673,7 +705,7 @@ def extent(conf, daemon):
             # have not seen this one before
             count.uniqueFiles = count.uniqueFiles + 1
             count.uniqueBytes = count.uniqueBytes + value['size']
-        # use 'size' to note that I've seen this one; 
+        # use 'size' to note that I've seen this one;
         # could double check that the size has not changed
         dedup[hash_v] = value['size']
 
@@ -695,9 +727,10 @@ def extent(conf, daemon):
 
 
 # ⌦
-# ⌦   Functions for talking to the user during the init process
+# Functions for talking to the user during the init process
 # ⌦
-
+#
+# used in interactive configuration wizard
 
 def prompt(prompt, validator=(lambda x: True), hint=None):
     """prompt the user for input
@@ -745,23 +778,29 @@ def multi_prompt(prompt, validator=(lambda x: x), hint=None):
     return inputs
 
 
-# ⌦
-# ⌦   Functions for validating user input
-# ⌦
+# ⏢
+# Functions for validating user input
+# ⏢
+#
+# used in interactive configuration wizard
 
 
 def confirm_or_die(string):
+    # for [Yn] prompt
     valid = string.lower() in ['', 'y', 'ye', 'yes']
     decline = string.lower() in ['n', 'no']
     if valid:
         return True
     elif decline:
         sys.exit(1)
+        # ⏏  exit the program
     else:
         print('please answer yes or no, [ENTER] for yes')
 
 
 def valid_path(string):
+    # make sure the direcory exists (means `s3://` paths must be
+    # edited into the config rather than entered in the wizard)
     path = os.path.expanduser(string)
     valid = os.path.isfile(path) or os.path.isdir(path)
     if valid:
@@ -771,7 +810,7 @@ def valid_path(string):
 
 
 # ⌦
-# ⌦   incantations
+# incantations
 # ⌦
 
 
@@ -805,7 +844,7 @@ def log_nice(conf):
 
 class NapContext(object):
     """context manager for system-load sensitive napping
-    looks at the CPU 1m load average, sleepiness, and 
+    looks at the CPU 1m load average, sleepiness, and
     function execution time.  If it can see it from
     psutil, iowait is also factored in.
 
@@ -818,7 +857,12 @@ class NapContext(object):
             disk_thrasher_functions()
     ```
     """
+    # NapContext() modeled on function Timer() example
     # http://stackoverflow.com/a/1685337/1763984
+    #
+    # in the future, add `os.POSIX_FADV_DONTNEED` support
+    # needs python 3 and newer linux kernel
+    # http://www.gossamer-threads.com/lists/python/python/1063241
     def __init__(self, sleepiness=1):
         self.sleepiness = sleepiness
 
@@ -826,12 +870,13 @@ class NapContext(object):
         self.__start = time.time()
 
     def __exit__(self, type, value, traceback):
-        # dynamic nap factor
+        # dynamic nap factor calculation
         elapsed = time.time() - self.__start
         load = os.getloadavg()[0]
         nap = load * elapsed * self.sleepiness
         cpu_wait = psutil.cpu_times_percent(0.0)
-        if 'iowait' in cpu_wait:  # Look at iowait on Linux
+        # Look at iowait on Linux
+        if 'iowait' in cpu_wait:
             nap = nap * (1 + cpu_wait.iowait) ** 2
 
         time.sleep(nap)
@@ -842,7 +887,8 @@ def _mkdir(newdir):
         - already exists, silently complete
         - regular file in the way, raise an exception
         - parent directory(ies) does not exist, make them as well
-    """  # http://code.activestate.com/recipes/82465-a-friendly-mkdir/
+    """
+    # http://code.activestate.com/recipes/82465-a-friendly-mkdir/
     if os.path.isdir(newdir):
         pass
     elif os.path.isfile(newdir):
@@ -852,13 +898,13 @@ def _mkdir(newdir):
         head, tail = os.path.split(newdir)
         if head and not os.path.isdir(head):
             _mkdir(head)
-        # print "_mkdir %s" % repr(newdir)
         if tail:
             os.mkdir(newdir)
 
 
 if __name__ == "__main__":
     sys.exit(main())
+    # ⏏  exit the program
 
 
 """
