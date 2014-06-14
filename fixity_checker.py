@@ -363,7 +363,7 @@ def check_one_file(filein, observations, hash, update, conf, errors):
         )
         if not looks_the_same:
             track_error(filename, "%r has changed" % filename, errors)
-        if any(news):
+        elif any(news):
             update = observations[filename_key]
             update.update(news)
             observations[filename_key] = update
