@@ -54,4 +54,4 @@ to specify application and server configuration.
 
 # Related work
 
-see https://github.com/tingletech/fixity_checker/wiki
+see https://github.com/tingletech/fixity_checker/wiki/Related
