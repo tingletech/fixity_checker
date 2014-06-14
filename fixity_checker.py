@@ -170,6 +170,11 @@ def main(argv=None):
         return argv.func(conf, daemon)
 
 
+# ⌦
+# ⌦  file checking functions
+# ⌦
+
+
 def checker(conf):
     """ the main loop """
     startLoopTime = time.time()
@@ -177,9 +182,8 @@ def checker(conf):
     observations = Shove(conf.data['data_url'], protocol=2)
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
 
-
     # %%
-    # %% update the database and quit
+    # %% `update` the database and quit
     # %% 
     if conf.args.subparser_name == 'update':
         logging.warning('altering memories')
@@ -196,8 +200,13 @@ def checker(conf):
         errors.close()
         exit(0)
 
-    # counts
+    # %%
+    # %% not an `update`, continue down the loop
+    # %% 
 
+    # TODO; set up var for counts
+
+    # %% check the hashes
     # for each hash type
     for hashtype in conf.data['hashlib']:
         logging.info('starting {0} checks'.format(hashtype))
@@ -208,7 +217,7 @@ def checker(conf):
 
             check_one_arg(filepath, observations, hashtype, False, conf, errors)
 
-    # check for missing files
+    # %% check for missing files
     logging.info('looking for missing files')
     for ____, value in observations.iteritems():
         if value['path'].startswith('s3://'):
@@ -219,10 +228,13 @@ def checker(conf):
             track_error(value['path'],
                         "{0} no longer exists or is not a file".format(value['path']),
                         errors)
-    # output json reports
+
+    # %% output json reports
     fixity_checker_report(observations, conf.app.json_dir)
     observations.close()
     logging.info('writting reports at {0}'.format(conf.app.json_dir))
+
+    # %% end of loop
     gc.collect()
     elapsedLoopTime = time.time() - startLoopTime
     # logging.info("elapsedLoopTime {0} {1} files {2} bytes".format(elapsedLoopTime))
@@ -234,348 +246,15 @@ def checker(conf):
         time.sleep(nap)
 
 
-def track_error(path, message, errors):
-    logging.warning(message)
-    filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
-    note = { message: True }
-    if filename_key in errors:
-        errors[filename_key].update(note)
-    else:
-        errors[filename_key] = note
-    errors.sync()
-
-# ⌦
-# ⌦  following functions impliment subcommands
-# ⌦
-
-
-def init(args):
-    """ setup wizard """
-    conf = args.config_dir
-
-    # don't run more than once
-    assert not(os.path.exists(conf)), \
-        "{0} directory specified for init must not exist".format(conf)
-
-    data_url_default = 'file://{0}/'.format(os.path.abspath(
-                                           os.path.join(conf,
-                                                        'fixity_data_raw')))
-
-    if args.archive_paths:
-        directories = [os.path.abspath(x) for x in args.archive_paths]
-        _init(conf, directories, data_url_default, 'sha512')
-        show_conf(_parse_conf(args), None)
-        exit(0)
-
-    # **
-    # ** run the install interactive script
-    # **
-
-    prompt("Initalize a new checker server at {0} [Yes/no]?".format(conf),
-           confirm_or_die)
-
-    directories = multi_prompt(
-        "Enter directories(s) or file(s) to watch, one per line",
-        valid_path,
-    )
-    print(directories)
-
-    data_url = default(
-        "Enter data_url for persisted fixity data",
-        data_url_default,
-        # check that it is a valid URL
-    )
-    print(data_url)
-
-    try:
-        hashlib_algorithms = hashlib.algorithms
-    except:
-        hashlib_algorithms = tuple(hashlib.algorithms_available)
-
-    pp(list(hashlib_algorithms))
-
-    hash = default(
-        'Pick a hashlib',
-        'sha512',
-        lambda x : x in hashlib_algorithms + ('',),
-        ' '.join(hashlib_algorithms)
-    )
-    print(hash)
-
-    _init(conf, directories, data_url, hash)
-    show_conf(_parse_conf(args), None)
-
-
-def _init(conf, directories, data_url, hash):
-    """ set up the application directory """
-    data = {
-        '__name__': "{0}_{1}_conf".format(APP_NAME, __version__),
-        'archive_paths': directories,
-        'data_url': data_url,
-        'hashlib': [ hash ],
-        'loglevel': 'INFO',
-        'min_loop': 43200,          # twice a day
-        'sleepiness': 1
-    }
-    os.mkdir(conf)
-    os.mkdir(os.path.join(conf, 'logs'))
-    with open(
-        os.path.join(conf, 'conf_{0}.json'.format(APP_NAME)),
-        'w',
-    ) as outfile:
-        json.dump(data, outfile, sort_keys=True,
-                  indent=4, separators=(',', ': '))
-    ## create .gitignore and activate(setting CHECKER_DIR)
-    with open(
-        os.path.join(conf, 'activate'),
-        'w',
-    ) as outfile:
-        outfile.write('export CHECKER_DIR={0}'.format(conf))
-
-
-def _parse_conf(args):
-    conf = args.config_dir
-    assert os.path.isdir(conf), \
-        "configuration directory {0} does not exist, run init".format(conf)
-    conf_file = os.path.join(conf, 'conf_{0}.json'.format(APP_NAME))
-    assert os.path.isfile(conf_file), \
-        "configuration file does not exist {0}, \
-        not properly initialized".format(conf_file)
-    with open(conf_file) as f:
-        data = json.load(f)
-    # validate data
-    assert 'data_url' in data, \
-        "data_url': '' not found in {0}".format(conf_file)
-    assert 'archive_paths' in data, \
-        "'archive_paths': [] not found in {0}".format(conf_file)
-
-    # build up nested named tuple to hold parsed config 
-    app_config = namedtuple('fixity',
-        'json_dir, conf_file, errors',
-    )
-    daemon_config = namedtuple('FixityDaemon', 'pid, log', )
-    daemon_config.pid = os.path.abspath(
-        os.path.join(conf, 'logs', '{0}.pid'.format(APP_NAME)))
-    daemon_config.log = os.path.abspath(
-        os.path.join(conf, 'logs', '{0}.log'.format(APP_NAME)))
-    app_config.json_dir = os.path.abspath(os.path.join(conf, 'json_dir'))
-    app_config.errors = os.path.abspath(os.path.join(conf, 'errors'))
-    c = namedtuple('FixityConfig','app, daemon, args, data, conf_file')
-    c.app = app_config
-    c.daemon = daemon_config
-    c.args = args
-    c.data = data
-    c.conf_file = os.path.abspath(conf_file)
-    return c
-
-
-def show_conf(conf, ____):
-    if 'log_file' in conf.args and conf.args.log_file:
-        print(conf.daemon.log)
-        exit(0)
-    if 'pid_file' in conf.args and conf.args.pid_file:
-        print(conf.daemon.pid)
-        exit(0)
-    if 'dir' in conf.args and conf.args.dir:
-        print(os.path.abspath(conf.args.config_dir))
-        exit(0)
-    print()
-    print('cursory check of {0} {1} config in "{2}" looks OK'.format(
-        APP_NAME, __version__, conf.args.config_dir)
-    )
-    print("conf file")
-    print('\t{0}'.format(conf.conf_file))
-    print("pid file")
-    print('\t{0}'.format(conf.daemon.pid))
-    print("log file")
-    print('\t{0}'.format(conf.daemon.log))
-    print("archive paths")
-    for d in conf.data['archive_paths']:
-        missing = ''
-        if not(os.path.isdir(d) or os.path.isfile(d)):
-            missing = '!! MISSING !!\a'
-        print('\t{0} {1}'.format(d, missing))
-    print()
-
-
-def status(conf, daemon):
-    """daemon and fixity status report"""
-    # daemonocle exit's 0 when 'not running', capture STDOUT
-    # http://stackoverflow.com/a/1983450/1763984
-    def captureSTDOUT(thefun, *a, **k):
-        savstdout = sys.stdout
-        sys.stdout = cStringIO.StringIO()
-        try:
-            thefun(*a, **k)
-        finally:
-            v = sys.stdout.getvalue()
-            sys.stdout = savstdout
-        return v
-
-    output = captureSTDOUT(daemon.do_action, 'status')
-    print(output)
-    if 'not running' in output:
-        exit(2)
-
-
-def errors(conf, daemon):
-    """ check for un-cleared errors with files"""
-    # persisted dict interface for long term memory
-    errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
-    if any(errors):
-        print("errors found")
-        for path, error in errors.iteritems():
-            pp(error)
-        errors.close()
-        exit(1)
-    else:
-        print("no errors found - OK")
-        print()
-        errors.close()
-
-
-def json_report(conf, daemon):
-    # persisted dict interface for long term memory
-    observations = Shove(conf.data['data_url'], protocol=2, flag='r')
-    fixity_checker_report(observations, conf.args.report_directory[0])
-    observations.close()
-
-
-def extent(conf, daemon):
-    observations = Shove(conf.data['data_url'], protocol=2, flag='r')
-    count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
-    count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0
-    dedup = {}
-
-    # this can take a while, let the user know we are working on it
-    # http://stackoverflow.com/a/4995896/1763984
-    def spinning_cursor():
-        while True:
-            for cursor in '|/-\\':
-                yield cursor
-    def spin_cursor(spinner):
-        if sys.stdout.isatty():  # don't pollute pipes
-            sys.stdout.write(spinner.next())
-            sys.stdout.write('\b')
-            sys.stdout.flush()
-    spinner = spinning_cursor()
-
-    for key, value in observations.iteritems():
-        count.files = int(count.files) + 1
-        if count.files % 100 == 0:
-            spin_cursor(spinner)
-        count.bytes = count.bytes + value['size']
-        hash_a = conf.data['hashlib'][0]
-        hash_v = value[hash_a]
-        if not(hash_v in dedup):
-            count.uniqueFiles = count.uniqueFiles + 1
-            count.uniqueBytes = count.uniqueBytes + value['size']
-        dedup[hash_v] = value['size']
-    observations.close()
-
-    def sizeof_fmt(num):
-        # http://stackoverflow.com/a/1094933/1763984
-        for x in ['bytes','KiB','MiB','GiB']:
-            if num < 1024.0:
-                return "%3.1f%s" % (num, x)
-            num /= 1024.0
-        return "%3.1f%s" % (num, 'TiB')
-    print('observing {0} files {1} bytes ({2}) | unique {3} files {4} bytes ({5})'.format(
-        count.files, count.bytes, sizeof_fmt(count.bytes),
-        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes)))
-    print()
-
-
-def json_load(conf, daemon):
-    pp(conf.args)
-    print("not implimented")
-
-
-# ⌦
-# ⌦   Functions for talking to the user during the init process
-# ⌦
-
-
-def prompt(prompt, validator=(lambda x: True), hint=None):
-    """prompt the user for input
-       :prompt: prompt text
-       :validator: optional validation function
-       :hint: optional hint for invalid answer
-    """
-    user_input = input(prompt)
-    while not validator(user_input):
-        user_input = input(prompt)
-    return user_input
-
-
-def default(prompt, default, validator=(lambda x: True), hint=None):
-    """prompt the user for input, with default
-       :prompt: prompt text
-       :default: default to use if the user hits [enter]
-       :validator: optional validation function
-       :hint: optional hint for invalid answer
-    """
-    user_input = input("{0} [{1}]".format(prompt, default))
-    while not validator(user_input):
-        user_input = input("{0} [{1}]".format(prompt, default))
-    return user_input or default
-
-
-def multi_prompt(prompt, validator=(lambda x: x), hint=None):
-    inputs = []
-    print(prompt)
-    user_input = input('1 > ')
-    while not validator(user_input):
-        user_input = os.path.expanduser(input('1 > '))
-    inputs.append(os.path.abspath(user_input))
-
-    for i in range(2, 10):
-        sub_prompt = '{0} > '.format(i)
-        user_input = os.path.expanduser(input(sub_prompt))
-        # the user might not have anything more to say
-        if not user_input:
-            break
-        while not validator(user_input):
-            user_input = os.path.expanduser(input(sub_prompt))
-        inputs.append(os.path.abspath(user_input))
-
-    return inputs
-
-
-# ⌦
-# ⌦   Functions for validating user input
-# ⌦
-
-
-def confirm_or_die(string):
-    valid = string.lower() in ['', 'y', 'ye', 'yes']
-    decline = string.lower() in ['n', 'no']
-    if valid:
-        return True
-    elif decline:
-        sys.exit(1)
-    else:
-        print('please answer yes or no, [ENTER] for yes')
-
-
-def valid_path(string):
-    path = os.path.expanduser(string)
-    valid = os.path.isfile(path) or os.path.isdir(path)
-    if valid:
-        return valid
-    else:
-        print('directory of file must exist')
-
-
-# ⌦
-# ⌦  file checking functions
-# ⌦
-
-
 def check_one_arg(filein, observations, hash, update, conf, errors):
     """check if the arg is a file or directory, walk directory for files"""
     if filein.startswith('s3://'):
-        check_s3_url(filein, observations, hash, update, conf, errors)
+        # SplitResult(scheme='s3', netloc='test.pdf', path='/dkd', query='', fragment='')
+        parts = urlparse.urlsplit(filein)  
+        bucket = boto.connect_s3().lookup(parts.netloc)
+        for key in bucket.list():  # look for pdfs that match the user supplied path
+            if not parts.path or key.name.startswith(parts.path[1:]):
+                check_one_file(key, observations, hash, update, conf, errors)
     elif os.path.isdir(filein):
         for root, ____, files in os.walk(filein):
             for f in files:
@@ -583,20 +262,6 @@ def check_one_arg(filein, observations, hash, update, conf, errors):
                 check_one_file(fullpath, observations, hash, update, conf, errors)
     else:
         check_one_file(filein, observations, hash, update, conf, errors)
-
-
-def check_s3_url(bucketurl, observations, hash, update, conf, errors):
-    s3 = boto.connect_s3()
-    # SplitResult(scheme='s3', netloc='test.pdf', path='/dkd', query='', fragment='')
-    parts = urlparse.urlsplit(bucketurl)  
-    bucket = s3.lookup(parts.netloc)
-    #bucket = s3.get_bucket(parts.netloc)
-    for key in bucket.list():
-        # look for pdfs that match the user supplied path
-        if not parts.path or key.name.startswith(parts.path[1:]):
-            # The Key object in boto, which represents on object in S3,
-            # can be used like an iterator http://stackoverflow.com/a/7625197/1763984
-            check_one_file(key, observations, hash, update, conf, errors)
 
 
 def check_one_file(filein, observations, hash, update, conf, errors):
@@ -692,6 +357,8 @@ def analyze_s3_key(key, hashtype, nap):
     """ returns a dict of hash and size in bytes """
     hasher = hashlib.new(hashtype)
     BLOCKSIZE = 1024 * hasher.block_size
+    # The Key object in boto, which represents on object in S3,
+    # can be used like an iterator http://stackoverflow.com/a/7625197/1763984
     buf = key.read(BLOCKSIZE)
     while len(buf) > 0:
         with nap:
@@ -705,6 +372,365 @@ def analyze_s3_key(key, hashtype, nap):
         hasher.name: hasher.hexdigest(),
         'path': 's3://{0}/{1}'.format(key.bucket.name, key.name),
     }
+
+
+def fixity_checker_report(observations, outputdir):
+    """ output a listing of our memories """
+    logging.debug("{0}, {1}".format(observations, outputdir))
+    shards = defaultdict(dict)
+    _mkdir(outputdir)
+    # sort into bins for transport
+    for key, value in observations.iteritems():
+        # first two characters are the key to the "shard"
+        shards[key[:2]].update({key: value})
+    # write out json for each bin
+    for key, value in shards.iteritems():
+        out = os.path.join(outputdir, ''.join([key, '.json']))
+        with open(out, 'w') as outfile:
+            json.dump(shards[key], outfile, sort_keys=True,
+                      indent=4, separators=(',', ': '))
+    del shards
+
+
+def track_error(path, message, errors):
+    logging.warning(message)
+    filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
+    note = { message: True }
+    if filename_key in errors:
+        errors[filename_key].update(note)
+    else:
+        errors[filename_key] = note
+    errors.sync()
+
+
+# ⌦
+# ⌦  following functions impliment subcommands
+# ⌦
+
+
+def init(args):
+    """ setup wizard """
+    conf = args.config_dir
+
+    # don't run more than once
+    assert not(os.path.exists(conf)), \
+        "{0} directory specified for init must not exist".format(conf)
+
+    data_url_default = 'file://{0}/'.format(os.path.abspath(
+                                           os.path.join(conf,
+                                                        'fixity_data_raw')))
+
+    if args.archive_paths:
+        directories = [os.path.abspath(x) for x in args.archive_paths]
+        _init(conf, directories, data_url_default, 'sha512')
+        show_conf(_parse_conf(args), None)
+        exit(0)
+
+    # **
+    # ** run the install interactive script
+    # **
+
+    prompt("Initalize a new checker server at {0} [Yes/no]?".format(conf),
+           confirm_or_die)
+
+    directories = multi_prompt(
+        "Enter directories(s) or file(s) to watch, one per line",
+        valid_path,
+    )
+    print(directories)
+
+    data_url = default(
+        "Enter data_url for persisted fixity data",
+        data_url_default,
+        # check that it is a valid URL
+    )
+    print(data_url)
+
+    try:
+        hashlib_algorithms = hashlib.algorithms
+    except:
+        hashlib_algorithms = tuple(hashlib.algorithms_available)
+
+    pp(list(hashlib_algorithms))
+
+    hash = default(
+        'Pick a hashlib',
+        'sha512',
+        lambda x : x in hashlib_algorithms + ('',),
+        ' '.join(hashlib_algorithms)
+    )
+    print(hash)
+
+    _init(conf, directories, data_url, hash)
+    show_conf(_parse_conf(args), None)
+
+
+def _init(conf, directories, data_url, hash):
+    """ set up the application directory """
+    data = {
+        '__name__': "{0}_{1}_conf".format(APP_NAME, __version__),
+        'archive_paths': directories,
+        'data_url': data_url,
+        'hashlib': [ hash ],
+        'loglevel': 'INFO',
+        'min_loop': 43200,          # twice a day
+        'sleepiness': 1
+    }
+    os.mkdir(conf)
+    os.mkdir(os.path.join(conf, 'logs'))
+    with open(
+        os.path.join(conf, 'conf_{0}.json'.format(APP_NAME)),
+        'w',
+    ) as outfile:
+        json.dump(data, outfile, sort_keys=True,
+                  indent=4, separators=(',', ': '))
+    ## create .gitignore and activate(setting CHECKER_DIR)
+    with open(
+        os.path.join(conf, 'activate'),
+        'w',
+    ) as outfile:
+        outfile.write('export CHECKER_DIR={0}'.format(conf))
+
+
+def _parse_conf(args):
+    """parse and validate conf, returns nested named tuple"""
+    conf = args.config_dir
+    assert os.path.isdir(conf), \
+        "configuration directory {0} does not exist, run init".format(conf)
+    conf_file = os.path.join(conf, 'conf_{0}.json'.format(APP_NAME))
+    assert os.path.isfile(conf_file), \
+        "configuration file does not exist {0}, \
+        not properly initialized".format(conf_file)
+    with open(conf_file) as f:
+        data = json.load(f)
+    # validate data
+    assert 'data_url' in data, \
+        "data_url': '' not found in {0}".format(conf_file)
+    assert 'archive_paths' in data, \
+        "'archive_paths': [] not found in {0}".format(conf_file)
+
+    # build up nested named tuple to hold parsed config 
+    app_config = namedtuple('fixity',
+        'json_dir, conf_file, errors',
+    )
+    daemon_config = namedtuple('FixityDaemon', 'pid, log', )
+    daemon_config.pid = os.path.abspath(
+        os.path.join(conf, 'logs', '{0}.pid'.format(APP_NAME)))
+    daemon_config.log = os.path.abspath(
+        os.path.join(conf, 'logs', '{0}.log'.format(APP_NAME)))
+    app_config.json_dir = os.path.abspath(os.path.join(conf, 'json_dir'))
+    app_config.errors = os.path.abspath(os.path.join(conf, 'errors'))
+    c = namedtuple('FixityConfig','app, daemon, args, data, conf_file')
+    c.app = app_config
+    c.daemon = daemon_config
+    c.args = args
+    c.data = data
+    c.conf_file = os.path.abspath(conf_file)
+    return c
+
+
+def show_conf(conf, ____):
+    """report on the conf"""
+    if 'log_file' in conf.args and conf.args.log_file:
+        print(conf.daemon.log)
+        exit(0)
+    if 'pid_file' in conf.args and conf.args.pid_file:
+        print(conf.daemon.pid)
+        exit(0)
+    if 'dir' in conf.args and conf.args.dir:
+        print(os.path.abspath(conf.args.config_dir))
+        exit(0)
+    print()
+    print('cursory check of {0} {1} config in "{2}" looks OK'.format(
+        APP_NAME, __version__, conf.args.config_dir)
+    )
+    print("conf file")
+    print('\t{0}'.format(conf.conf_file))
+    print("pid file")
+    print('\t{0}'.format(conf.daemon.pid))
+    print("log file")
+    print('\t{0}'.format(conf.daemon.log))
+    print("archive paths")
+    for d in conf.data['archive_paths']:
+        missing = ''
+        if not(os.path.isdir(d) or os.path.isfile(d)):
+            missing = '!! MISSING !!\a'
+        print('\t{0} {1}'.format(d, missing))
+    print()
+
+
+def status(conf, daemon):
+    """daemon and fixity status report"""
+    # daemonocle exit's 0 when 'not running', capture STDOUT
+    # http://stackoverflow.com/a/1983450/1763984
+    def captureSTDOUT(thefun, *a, **k):
+        savstdout = sys.stdout
+        sys.stdout = cStringIO.StringIO()
+        try:
+            thefun(*a, **k)
+        finally:
+            v = sys.stdout.getvalue()
+            sys.stdout = savstdout
+        return v
+
+    output = captureSTDOUT(daemon.do_action, 'status')
+    print(output)
+    if 'not running' in output:
+        exit(2)
+
+
+def errors(conf, daemon):
+    """ check for un-cleared errors with files"""
+    # persisted dict interface for long term memory
+    errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
+    if any(errors):
+        print("errors found")
+        for path, error in errors.iteritems():
+            pp(error)
+        errors.close()
+        exit(1)
+    else:
+        print("no errors found - OK")
+        print()
+        errors.close()
+
+
+def json_report(conf, daemon):
+    # persisted dict interface for long term memory
+    observations = Shove(conf.data['data_url'], protocol=2, flag='r')
+    fixity_checker_report(observations, conf.args.report_directory[0])
+    observations.close()
+
+
+def json_load(conf, daemon):
+    pp(conf.args)
+    print("not implimented")
+
+
+def extent(conf, daemon):
+    observations = Shove(conf.data['data_url'], protocol=2, flag='r')
+    count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
+    count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0
+    dedup = {}
+
+    # this can take a while, let the user know we are working on it
+    # http://stackoverflow.com/a/4995896/1763984
+    def spinning_cursor():
+        while True:
+            for cursor in '|/-\\':
+                yield cursor
+    def spin_cursor(spinner):
+        if sys.stdout.isatty():  # don't pollute pipes
+            sys.stdout.write(spinner.next())
+            sys.stdout.write('\b')
+            sys.stdout.flush()
+    spinner = spinning_cursor()
+
+    for key, value in observations.iteritems():
+        count.files = int(count.files) + 1
+        if count.files % 100 == 0:
+            spin_cursor(spinner)
+        count.bytes = count.bytes + value['size']
+        hash_a = conf.data['hashlib'][0]
+        hash_v = value[hash_a]
+        if not(hash_v in dedup):
+            count.uniqueFiles = count.uniqueFiles + 1
+            count.uniqueBytes = count.uniqueBytes + value['size']
+        dedup[hash_v] = value['size']
+    observations.close()
+
+    def sizeof_fmt(num):
+        # http://stackoverflow.com/a/1094933/1763984
+        for x in ['bytes','KiB','MiB','GiB']:
+            if num < 1024.0:
+                return "%3.1f%s" % (num, x)
+            num /= 1024.0
+        return "%3.1f%s" % (num, 'TiB')
+    print('observing {0} files {1} bytes ({2}) | unique {3} files {4} bytes ({5})'.format(
+        count.files, count.bytes, sizeof_fmt(count.bytes),
+        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes)))
+    print()
+
+
+# ⌦
+# ⌦   Functions for talking to the user during the init process
+# ⌦
+
+
+def prompt(prompt, validator=(lambda x: True), hint=None):
+    """prompt the user for input
+       :prompt: prompt text
+       :validator: optional validation function
+       :hint: optional hint for invalid answer
+    """
+    user_input = input(prompt)
+    while not validator(user_input):
+        user_input = input(prompt)
+    return user_input
+
+
+def default(prompt, default, validator=(lambda x: True), hint=None):
+    """prompt the user for input, with default
+       :prompt: prompt text
+       :default: default to use if the user hits [enter]
+       :validator: optional validation function
+       :hint: optional hint for invalid answer
+    """
+    user_input = input("{0} [{1}]".format(prompt, default))
+    while not validator(user_input):
+        user_input = input("{0} [{1}]".format(prompt, default))
+    return user_input or default
+
+
+def multi_prompt(prompt, validator=(lambda x: x), hint=None):
+    inputs = []
+    print(prompt)
+    user_input = input('1 > ')
+    while not validator(user_input):
+        user_input = os.path.expanduser(input('1 > '))
+    inputs.append(os.path.abspath(user_input))
+
+    for i in range(2, 10):
+        sub_prompt = '{0} > '.format(i)
+        user_input = os.path.expanduser(input(sub_prompt))
+        # the user might not have anything more to say
+        if not user_input:
+            break
+        while not validator(user_input):
+            user_input = os.path.expanduser(input(sub_prompt))
+        inputs.append(os.path.abspath(user_input))
+
+    return inputs
+
+
+# ⌦
+# ⌦   Functions for validating user input
+# ⌦
+
+
+def confirm_or_die(string):
+    valid = string.lower() in ['', 'y', 'ye', 'yes']
+    decline = string.lower() in ['n', 'no']
+    if valid:
+        return True
+    elif decline:
+        sys.exit(1)
+    else:
+        print('please answer yes or no, [ENTER] for yes')
+
+
+def valid_path(string):
+    path = os.path.expanduser(string)
+    valid = os.path.isfile(path) or os.path.isdir(path)
+    if valid:
+        return valid
+    else:
+        print('directory of file must exist')
+
+
+# ⌦
+# ⌦   incantations
+# ⌦
 
 
 def log_nice(conf):
@@ -752,24 +778,6 @@ class NapContext(object):
         time.sleep(nap)
 
 
-def fixity_checker_report(observations, outputdir):
-    """ output a listing of our memories """
-    logging.debug("{0}, {1}".format(observations, outputdir))
-    shards = defaultdict(dict)
-    _mkdir(outputdir)
-    # sort into bins for transport
-    for key, value in observations.iteritems():
-        # first two characters are the key to the "shard"
-        shards[key[:2]].update({key: value})
-    # write out json for each bin
-    for key, value in shards.iteritems():
-        out = os.path.join(outputdir, ''.join([key, '.json']))
-        with open(out, 'w') as outfile:
-            json.dump(shards[key], outfile, sort_keys=True,
-                      indent=4, separators=(',', ': '))
-    del shards
-
-
 def _mkdir(newdir):
     """works the way a good mkdir should :)
         - already exists, silently complete
@@ -792,6 +800,8 @@ def _mkdir(newdir):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
 """
 Copyright © 2014, Regents of the University of California
 All rights reserved.
