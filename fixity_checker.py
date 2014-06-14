@@ -6,6 +6,9 @@ server daemon
 """
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
+# was trying to keep write this in a way that it would work 
+# with python 2 or python 3.  Right now it only works with
+# 2, mainly because daemonocle is python 2 only
 import daemonocle
 import argparse
 import pkg_resources  # part of setuptools
@@ -25,7 +28,7 @@ import cStringIO
 import urlparse
 import gc
 
-# raw_import() in 2 -> import() in 3
+# raw_input() in 2 -> input() in 3
 try:
     input = raw_input
 except NameError:
@@ -165,10 +168,13 @@ def main(argv=None):
     )
 
     if sys.argv[1] in ['start', 'stop', 'restart']:
+        # use daemonocle for these subcommands
         daemon.do_action(sys.argv[1])
     elif sys.argv[1] == 'update':
+        # updates are a special case
         daemon.do_action('start')
     else:
+        # use argparse subcommands
         return argv.func(conf, daemon)
 
 
@@ -181,14 +187,17 @@ def checker(conf):
     """ the main loop """
     startLoopTime = time.time()
     # persisted dict interface for long term memory
+    # https://pypi.python.org/pypi/shove/
     observations = Shove(conf.data['data_url'], protocol=2)
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
 
     # %%
-    # %% `update` the database and quit
+    # %% `update` the database and quit (sever must be shut down)
     # %%
     if conf.args.subparser_name == 'update':
         logging.warning('altering memories')
+	# right now this does not handle legit removals; only file
+	# changes
         for f in conf.args.file:
             path = os.path.abspath(f)
             print(path)
@@ -198,6 +207,7 @@ def checker(conf):
                 )
                 observations.sync()
             filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
+            # clear errors
             errors.pop(filename_key, None)
             errors.sync()
         observations.close()
@@ -255,45 +265,57 @@ def checker(conf):
 
 def check_one_arg(filein, observations, hash, update, conf, errors):
     """check if the arg is a file or directory, walk directory for files"""
-    if filein.startswith('s3://'):
-        parts = urlparse.urlsplit(filein)
-        bucket = boto.connect_s3().lookup(parts.netloc)
-        for key in bucket.list():
-            # look for pdfs that match the user supplied path
-            if not parts.path or key.name.startswith(parts.path[1:]):
-                check_one_file(key, observations, hash, update, conf, errors)
-    elif os.path.isdir(filein):
+    if os.path.isdir(filein):
         for root, ____, files in os.walk(filein):
             for f in files:
                 fullpath = os.path.join(root, f)
                 check_one_file(
                     fullpath, observations, hash, update, conf, errors
                 )
+    elif filein.startswith('s3://'):
+        parts = urlparse.urlsplit(filein)
+        # https://docs.python.org/2/library/urlparse.html#urlparse-result-object
+        bucket = boto.connect_s3().lookup(parts.netloc)
+        for key in bucket.list():
+            # look for files that match the user supplied path,
+            # acts like recursive directory search
+            if not parts.path or key.name.startswith(parts.path[1:]):
+                check_one_file(key, observations, hash, update, conf, errors)
     else:
         check_one_file(filein, observations, hash, update, conf, errors)
 
 
 def check_one_file(filein, observations, hash, update, conf, errors):
-    """check one file (or s3 key) against our memories"""
+    """check one file (or s3 key) against our memories
+    :filein: can be a filename or and AWS s3 key
+    :observations: is a dict like object persisting our memories
+    :hash: is the name of the hash function
+    :update: is True or False (alter memory)
+    :conf: is a nested named tuple parsed from the conf
+    :errors: is a dict like object persisting noted errors
+    has side effects on observations and memories
+    """
     nap = NapContext(conf.data['sleepiness'])
     filename = ""
     s3 = False
     # do I have a local filesystem path or s3 bucket key?
     if type(filein) in [unicode, str]:
         filename = os.path.abspath(filein)
-    try:
+    try:  # we don't know if boto will be installed, must be better way
         if type(filein) is boto.s3.key.Key:
             s3 = True
             filename = 's3://{0}/{1}'.format(filein.bucket.name,
                                              filein.name)
     except NameError:
         pass
-    filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
-    logging.info('{0}'.format(filename))
 
     # normalize filename, take hash for key
+    filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
+    logging.info('{0}'.format(filename))
     logging.debug('sha224 of path {0}'.format(filename_key))
 
+    # dispatch, these are ripe for refactoring to take
+    # a file object
     if s3:
         seen_now = analyze_s3_key(filein, hash, nap)
     else:
@@ -402,6 +424,7 @@ def fixity_checker_report(observations, outputdir):
 
 
 def track_error(path, message, errors):
+    """log errors and note the problem files"""
     logging.warning(message)
     filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
     note = {message: True}
@@ -635,8 +658,10 @@ def extent(conf, daemon):
             sys.stdout.write(spinner.next())
             sys.stdout.write('\b')
             sys.stdout.flush()
+
     spinner = spinning_cursor()
 
+    # okay, ready to count!
     for key, value in observations.iteritems():
         count.files = int(count.files) + 1
         if count.files % 100 == 0:
@@ -645,9 +670,13 @@ def extent(conf, daemon):
         hash_a = conf.data['hashlib'][0]
         hash_v = value[hash_a]
         if not(hash_v in dedup):
+            # have not seen this one before
             count.uniqueFiles = count.uniqueFiles + 1
             count.uniqueBytes = count.uniqueBytes + value['size']
+        # use 'size' to note that I've seen this one; 
+        # could double check that the size has not changed
         dedup[hash_v] = value['size']
+
     observations.close()
 
     def sizeof_fmt(num):
@@ -657,6 +686,7 @@ def extent(conf, daemon):
                 return "%3.1f%s" % (num, x)
             num /= 1024.0
         return "%3.1f%s" % (num, 'TiB')
+
     print('observing {0} files {1} bytes ({2}) | \
         unique {3} files {4} bytes ({5})'.format(
         count.files, count.bytes, sizeof_fmt(count.bytes),
@@ -752,6 +782,7 @@ def log_nice(conf):
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % conf.data['loglevel'])
 
+    # logging to root logger, why not?
     logger = logging.getLogger()
     logger.setLevel(numeric_level)
     rh = logging.handlers.TimedRotatingFileHandler(
@@ -768,11 +799,25 @@ def log_nice(conf):
     if hasattr(p, 'set_ionice'):
         p.set_ionice(psutil.IOPRIO_CLASS_IDLE)
 
+    # and be os nice for good measure
     os.nice(10)
 
 
 class NapContext(object):
-    """context manager for system-load sensitive napping"""
+    """context manager for system-load sensitive napping
+    looks at the CPU 1m load average, sleepiness, and 
+    function execution time.  If it can see it from
+    psutil, iowait is also factored in.
+
+    use sleepiness of 0 to make moot
+
+    ```
+        nap = NapContext(2)  # 2 is twice as sleepy
+
+        with nap:
+            disk_thrasher_functions()
+    ```
+    """
     # http://stackoverflow.com/a/1685337/1763984
     def __init__(self, sleepiness=1):
         self.sleepiness = sleepiness
