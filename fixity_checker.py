@@ -484,7 +484,7 @@ def init(args):
     data_url_default = 'file://{0}/'.format(os.path.abspath(
                                             os.path.join(conf,
                                                          'fixity_data_raw')))
-
+    # TODO; any/all config options can be passed to init
     if args.archive_paths:
         directories = [os.path.abspath(x) for x in args.archive_paths]
         _init(conf, directories, data_url_default, 'sha512')
@@ -574,6 +574,8 @@ def _parse_conf(args):
         "data_url': '' not found in {0}".format(conf_file)
     assert 'archive_paths' in data, \
         "'archive_paths': [] not found in {0}".format(conf_file)
+    assert 'min_loop' in data, \
+        "'min_loop': [] not found in {0}".format(conf_file)
 
     # build up nested named tuple to hold parsed config
     app_config = namedtuple(
