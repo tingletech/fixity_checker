@@ -42,6 +42,8 @@ import psutil
 import cStringIO
 import urlparse
 import gc
+import fnmatch
+import re
 
 # user tty input is `raw_input()` in 2 -> `input()` in 3
 try:
@@ -341,6 +343,10 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     except NameError:
         pass
 
+    if conf.app.ignore_re and re.match(conf.app.ignore_re, filename):
+        logging.debug('skipped {0}'.format(filename))
+        return 
+
     # normalize filename, take hash for key
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
     logging.info('{0}'.format(filename))
@@ -536,6 +542,7 @@ def _init(conf, directories, data_url, hash):
     data = {
         '__name__': "{0}_{1}_conf".format(APP_NAME, __version__),
         'archive_paths': directories,
+        'ignore_paths': [],
         'data_url': data_url,
         'hashlib': [hash],
         'loglevel': 'INFO',
@@ -580,7 +587,7 @@ def _parse_conf(args):
     # build up nested named tuple to hold parsed config
     app_config = namedtuple(
         'fixity',
-        'json_dir, conf_file, errors',
+        'json_dir, conf_file, errors, ignore_re',
     )
     daemon_config = namedtuple('FixityDaemon', 'pid, log', )
     daemon_config.pid = os.path.abspath(
@@ -589,6 +596,11 @@ def _parse_conf(args):
         os.path.join(conf, 'logs', '{0}.log'.format(APP_NAME)))
     app_config.json_dir = os.path.abspath(os.path.join(conf, 'json_dir'))
     app_config.errors = os.path.abspath(os.path.join(conf, 'errors'))
+    if 'ignore_paths' in data and data['ignore_paths'] != []:
+        # http://stackoverflow.com/a/5141829/1763984
+        app_config.ignore_re = r'|'.join([fnmatch.translate(x) for x in data['ignore_paths']]) or r'$.'
+    else:
+        app_config.ignore_re = False
     c = namedtuple('FixityConfig', 'app, daemon, args, data, conf_file')
     c.app = app_config
     c.daemon = daemon_config
@@ -628,6 +640,11 @@ def show_conf(conf, ____):
         if not(os.path.isdir(d) or os.path.isfile(d)):
             missing = '!! MISSING !!\a'
         print('\t{0} {1}'.format(d, missing))
+    if conf.app.ignore_re:
+        print("ignore paths")
+        for d in conf.data['ignore_paths']:
+            print('\t{0}'.format(d))
+        print('\t\tregex {0}'.format(conf.app.ignore_re))
     print()
 
 
