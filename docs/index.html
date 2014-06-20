@@ -107,7 +107,9 @@ if you have any issues, ideas, or suggestions.</p>
 <span class="hljs-keyword">import</span> psutil
 <span class="hljs-keyword">import</span> cStringIO
 <span class="hljs-keyword">import</span> urlparse
-<span class="hljs-keyword">import</span> gc</pre></div></div>
+<span class="hljs-keyword">import</span> gc
+<span class="hljs-keyword">import</span> fnmatch
+<span class="hljs-keyword">import</span> re</pre></div></div>
             
         </li>
         
@@ -922,7 +924,11 @@ AWS key than the try/except here</p>
             filename = <span class="hljs-string">'s3://{0}/{1}'</span>.format(filein.bucket.name,
                                              filein.name)
     <span class="hljs-keyword">except</span> NameError:
-        <span class="hljs-keyword">pass</span></pre></div></div>
+        <span class="hljs-keyword">pass</span>
+
+    <span class="hljs-keyword">if</span> conf.app.ignore_re <span class="hljs-keyword">and</span> re.match(conf.app.ignore_re, filename):
+        logging.debug(<span class="hljs-string">'skipped {0}'</span>.format(filename))
+        <span class="hljs-keyword">return</span></pre></div></div>
             
         </li>
         
@@ -1242,13 +1248,7 @@ following functions impliment subcommands
 
     data_url_default = <span class="hljs-string">'file://{0}/'</span>.format(os.path.abspath(
                                             os.path.join(conf,
-                                                         <span class="hljs-string">'fixity_data_raw'</span>)))
-
-    <span class="hljs-keyword">if</span> args.archive_paths:
-        directories = [os.path.abspath(x) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> args.archive_paths]
-        _init(conf, directories, data_url_default, <span class="hljs-string">'sha512'</span>)
-        show_conf(_parse_conf(args), <span class="hljs-keyword">None</span>)
-        exit(<span class="hljs-number">0</span>)</pre></div></div>
+                                                         <span class="hljs-string">'fixity_data_raw'</span>)))</pre></div></div>
             
         </li>
         
@@ -1259,9 +1259,15 @@ following functions impliment subcommands
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-61">&#182;</a>
               </div>
-              <p>⏏  exit the program</p>
+              <p>TODO; any/all config options can be passed to init</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> args.archive_paths:
+        directories = [os.path.abspath(x) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> args.archive_paths]
+        _init(conf, directories, data_url_default, <span class="hljs-string">'sha512'</span>)
+        show_conf(_parse_conf(args), <span class="hljs-keyword">None</span>)
+        exit(<span class="hljs-number">0</span>)</pre></div></div>
             
         </li>
         
@@ -1271,6 +1277,19 @@ following functions impliment subcommands
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-62">&#182;</a>
+              </div>
+              <p>⏏  exit the program</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-63">&#182;</a>
               </div>
               <p><strong>
 </strong> run the install interactive script
@@ -1295,11 +1314,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-63">
+        <li id="section-64">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-63">&#182;</a>
+                <a class="pilcrow" href="#section-64">&#182;</a>
               </div>
               <p>check that it is a valid URL</p>
 
@@ -1332,6 +1351,7 @@ following functions impliment subcommands
     data = {
         <span class="hljs-string">'__name__'</span>: <span class="hljs-string">"{0}_{1}_conf"</span>.format(APP_NAME, __version__),
         <span class="hljs-string">'archive_paths'</span>: directories,
+        <span class="hljs-string">'ignore_paths'</span>: [],
         <span class="hljs-string">'data_url'</span>: data_url,
         <span class="hljs-string">'hashlib'</span>: [hash],
         <span class="hljs-string">'loglevel'</span>: <span class="hljs-string">'INFO'</span>,
@@ -1350,11 +1370,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-64">
+        <li id="section-65">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-64">&#182;</a>
+                <a class="pilcrow" href="#section-65">&#182;</a>
               </div>
               <p>TODO create .gitignore and activate(setting CHECKER_DIR)</p>
 
@@ -1382,11 +1402,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-65">
+        <li id="section-66">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-65">&#182;</a>
+                <a class="pilcrow" href="#section-66">&#182;</a>
               </div>
               <p>validate data</p>
 
@@ -1395,16 +1415,18 @@ following functions impliment subcommands
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">assert</span> <span class="hljs-string">'data_url'</span> <span class="hljs-keyword">in</span> data, \
         <span class="hljs-string">"data_url': '' not found in {0}"</span>.format(conf_file)
     <span class="hljs-keyword">assert</span> <span class="hljs-string">'archive_paths'</span> <span class="hljs-keyword">in</span> data, \
-        <span class="hljs-string">"'archive_paths': [] not found in {0}"</span>.format(conf_file)</pre></div></div>
+        <span class="hljs-string">"'archive_paths': [] not found in {0}"</span>.format(conf_file)
+    <span class="hljs-keyword">assert</span> <span class="hljs-string">'min_loop'</span> <span class="hljs-keyword">in</span> data, \
+        <span class="hljs-string">"'min_loop': [] not found in {0}"</span>.format(conf_file)</pre></div></div>
             
         </li>
         
         
-        <li id="section-66">
+        <li id="section-67">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-66">&#182;</a>
+                <a class="pilcrow" href="#section-67">&#182;</a>
               </div>
               <p>build up nested named tuple to hold parsed config</p>
 
@@ -1412,7 +1434,7 @@ following functions impliment subcommands
             
             <div class="content"><div class='highlight'><pre>    app_config = namedtuple(
         <span class="hljs-string">'fixity'</span>,
-        <span class="hljs-string">'json_dir, conf_file, errors'</span>,
+        <span class="hljs-string">'json_dir, conf_file, errors, ignore_re'</span>,
     )
     daemon_config = namedtuple(<span class="hljs-string">'FixityDaemon'</span>, <span class="hljs-string">'pid, log'</span>, )
     daemon_config.pid = os.path.abspath(
@@ -1421,6 +1443,24 @@ following functions impliment subcommands
         os.path.join(conf, <span class="hljs-string">'logs'</span>, <span class="hljs-string">'{0}.log'</span>.format(APP_NAME)))
     app_config.json_dir = os.path.abspath(os.path.join(conf, <span class="hljs-string">'json_dir'</span>))
     app_config.errors = os.path.abspath(os.path.join(conf, <span class="hljs-string">'errors'</span>))
+    <span class="hljs-keyword">if</span> <span class="hljs-string">'ignore_paths'</span> <span class="hljs-keyword">in</span> data <span class="hljs-keyword">and</span> data[<span class="hljs-string">'ignore_paths'</span>] != []:</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-68">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-68">&#182;</a>
+              </div>
+              <p><a href="http://stackoverflow.com/a/5141829/1763984">http://stackoverflow.com/a/5141829/1763984</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        app_config.ignore_re = <span class="hljs-string">r'|'</span>.join([fnmatch.translate(x) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> data[<span class="hljs-string">'ignore_paths'</span>]]) <span class="hljs-keyword">or</span> <span class="hljs-string">r'$.'</span>
+    <span class="hljs-keyword">else</span>:
+        app_config.ignore_re = <span class="hljs-keyword">False</span>
     c = namedtuple(<span class="hljs-string">'FixityConfig'</span>, <span class="hljs-string">'app, daemon, args, data, conf_file'</span>)
     c.app = app_config
     c.daemon = daemon_config
@@ -1439,11 +1479,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-67">
+        <li id="section-69">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-67">&#182;</a>
+                <a class="pilcrow" href="#section-69">&#182;</a>
               </div>
               <p>⏏  exit the program</p>
 
@@ -1456,11 +1496,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-68">
+        <li id="section-70">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-68">&#182;</a>
+                <a class="pilcrow" href="#section-70">&#182;</a>
               </div>
               <p>⏏  exit the program</p>
 
@@ -1473,11 +1513,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-69">
+        <li id="section-71">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-69">&#182;</a>
+                <a class="pilcrow" href="#section-71">&#182;</a>
               </div>
               <p>⏏  exit the program</p>
 
@@ -1499,6 +1539,11 @@ following functions impliment subcommands
         <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span>(os.path.isdir(d) <span class="hljs-keyword">or</span> os.path.isfile(d)):
             missing = <span class="hljs-string">'!! MISSING !!\a'</span>
         print(<span class="hljs-string">'\t{0} {1}'</span>.format(d, missing))
+    <span class="hljs-keyword">if</span> conf.app.ignore_re:
+        print(<span class="hljs-string">"ignore paths"</span>)
+        <span class="hljs-keyword">for</span> d <span class="hljs-keyword">in</span> conf.data[<span class="hljs-string">'ignore_paths'</span>]:
+            print(<span class="hljs-string">'\t{0}'</span>.format(d))
+        print(<span class="hljs-string">'\t\tregex {0}'</span>.format(conf.app.ignore_re))
     print()
 
 
@@ -1508,11 +1553,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-70">
+        <li id="section-72">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-70">&#182;</a>
+                <a class="pilcrow" href="#section-72">&#182;</a>
               </div>
               <p>daemonocle exits <code>0</code> when ‘not running’, capture STDOUT
 <a href="http://stackoverflow.com/a/1983450/1763984">http://stackoverflow.com/a/1983450/1763984</a></p>
@@ -1537,11 +1582,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-71">
+        <li id="section-73">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-71">&#182;</a>
+                <a class="pilcrow" href="#section-73">&#182;</a>
               </div>
               <p>⏏  exit the program with an error</p>
 
@@ -1555,11 +1600,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-72">
+        <li id="section-74">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-72">&#182;</a>
+                <a class="pilcrow" href="#section-74">&#182;</a>
               </div>
               <p>persisted dict interface for long term memory</p>
 
@@ -1576,11 +1621,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-73">
+        <li id="section-75">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-73">&#182;</a>
+                <a class="pilcrow" href="#section-75">&#182;</a>
               </div>
               <p>⏏  exit the program with an error</p>
 
@@ -1597,11 +1642,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-74">
+        <li id="section-76">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-74">&#182;</a>
+                <a class="pilcrow" href="#section-76">&#182;</a>
               </div>
               <p>persisted dict interface for long term memory</p>
 
@@ -1617,11 +1662,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-75">
+        <li id="section-77">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-75">&#182;</a>
+                <a class="pilcrow" href="#section-77">&#182;</a>
               </div>
               <p>TODO — also add bagit and checkm loaders?</p>
 
@@ -1640,11 +1685,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-76">
+        <li id="section-78">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-76">&#182;</a>
+                <a class="pilcrow" href="#section-78">&#182;</a>
               </div>
               <p>this can take a while, let the user know we are working on it
 <a href="http://stackoverflow.com/a/4995896/1763984">http://stackoverflow.com/a/4995896/1763984</a></p>
@@ -1667,11 +1712,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-77">
+        <li id="section-79">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-77">&#182;</a>
+                <a class="pilcrow" href="#section-79">&#182;</a>
               </div>
               <p>okay, ready to count!</p>
 
@@ -1689,11 +1734,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-78">
+        <li id="section-80">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-78">&#182;</a>
+                <a class="pilcrow" href="#section-80">&#182;</a>
               </div>
               <p>have not seen this one before</p>
 
@@ -1705,11 +1750,11 @@ following functions impliment subcommands
         </li>
         
         
-        <li id="section-79">
+        <li id="section-81">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-79">&#182;</a>
+                <a class="pilcrow" href="#section-81">&#182;</a>
               </div>
               <p>use ‘size’ to note that I’ve seen this one;
 could double check that the size has not changed</p>
@@ -1725,11 +1770,11 @@ could double check that the size has not changed</p>
         </li>
         
         
-        <li id="section-80">
+        <li id="section-82">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-80">&#182;</a>
+                <a class="pilcrow" href="#section-82">&#182;</a>
               </div>
               <p><a href="http://stackoverflow.com/a/1094933/1763984">http://stackoverflow.com/a/1094933/1763984</a></p>
 
@@ -1750,11 +1795,11 @@ could double check that the size has not changed</p>
         </li>
         
         
-        <li id="section-81">
+        <li id="section-83">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-81">&#182;</a>
+                <a class="pilcrow" href="#section-83">&#182;</a>
               </div>
               <p>⌦
 Functions for talking to the user during the init process
@@ -1804,11 +1849,11 @@ Functions for talking to the user during the init process
         </li>
         
         
-        <li id="section-82">
+        <li id="section-84">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-82">&#182;</a>
+                <a class="pilcrow" href="#section-84">&#182;</a>
               </div>
               <p>the user might not have anything more to say</p>
 
@@ -1825,11 +1870,11 @@ Functions for talking to the user during the init process
         </li>
         
         
-        <li id="section-83">
+        <li id="section-85">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-83">&#182;</a>
+                <a class="pilcrow" href="#section-85">&#182;</a>
               </div>
               <p>⏢
 Functions for validating user input
@@ -1845,11 +1890,11 @@ Functions for validating user input
         </li>
         
         
-        <li id="section-84">
+        <li id="section-86">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-84">&#182;</a>
+                <a class="pilcrow" href="#section-86">&#182;</a>
               </div>
               <p>for [Yn] prompt</p>
 
@@ -1865,11 +1910,11 @@ Functions for validating user input
         </li>
         
         
-        <li id="section-85">
+        <li id="section-87">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-85">&#182;</a>
+                <a class="pilcrow" href="#section-87">&#182;</a>
               </div>
               <p>⏏  exit the program with an error</p>
 
@@ -1884,11 +1929,11 @@ Functions for validating user input
         </li>
         
         
-        <li id="section-86">
+        <li id="section-88">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-86">&#182;</a>
+                <a class="pilcrow" href="#section-88">&#182;</a>
               </div>
               <p>make sure the direcory exists (means <code>s3://</code> paths must be
 edited into the config rather than entered in the wizard)</p>
@@ -1905,11 +1950,11 @@ edited into the config rather than entered in the wizard)</p>
         </li>
         
         
-        <li id="section-87">
+        <li id="section-89">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-87">&#182;</a>
+                <a class="pilcrow" href="#section-89">&#182;</a>
               </div>
               <p>⌦
 incantations
@@ -1925,11 +1970,11 @@ incantations
         </li>
         
         
-        <li id="section-88">
+        <li id="section-90">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-88">&#182;</a>
+                <a class="pilcrow" href="#section-90">&#182;</a>
               </div>
               <p>set debugging level</p>
 
@@ -1942,11 +1987,11 @@ incantations
         </li>
         
         
-        <li id="section-89">
+        <li id="section-91">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-89">&#182;</a>
+                <a class="pilcrow" href="#section-91">&#182;</a>
               </div>
               <p>logging to root logger, why not?</p>
 
@@ -1965,11 +2010,11 @@ incantations
         </li>
         
         
-        <li id="section-90">
+        <li id="section-92">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-90">&#182;</a>
+                <a class="pilcrow" href="#section-92">&#182;</a>
               </div>
               <p>ionice… <a href="http://stackoverflow.com/a/6245160/1763984">http://stackoverflow.com/a/6245160/1763984</a></p>
 
@@ -1980,11 +2025,11 @@ incantations
         </li>
         
         
-        <li id="section-91">
+        <li id="section-93">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-91">&#182;</a>
+                <a class="pilcrow" href="#section-93">&#182;</a>
               </div>
               <p>… if we can <a href="http://stackoverflow.com/a/34472/1763984">http://stackoverflow.com/a/34472/1763984</a></p>
 
@@ -1996,11 +2041,11 @@ incantations
         </li>
         
         
-        <li id="section-92">
+        <li id="section-94">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-92">&#182;</a>
+                <a class="pilcrow" href="#section-94">&#182;</a>
               </div>
               <p>and be os nice for good measure</p>
 
@@ -2028,11 +2073,11 @@ incantations
         </li>
         
         
-        <li id="section-93">
+        <li id="section-95">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-93">&#182;</a>
+                <a class="pilcrow" href="#section-95">&#182;</a>
               </div>
               <p>NapContext() modeled on function Timer() example
 <a href="http://stackoverflow.com/a/1685337/1763984">http://stackoverflow.com/a/1685337/1763984</a></p>
@@ -2053,11 +2098,11 @@ needs python 3 and newer linux kernel
         </li>
         
         
-        <li id="section-94">
+        <li id="section-96">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-94">&#182;</a>
+                <a class="pilcrow" href="#section-96">&#182;</a>
               </div>
               <p>dynamic nap factor calculation</p>
 
@@ -2071,11 +2116,11 @@ needs python 3 and newer linux kernel
         </li>
         
         
-        <li id="section-95">
+        <li id="section-97">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-95">&#182;</a>
+                <a class="pilcrow" href="#section-97">&#182;</a>
               </div>
               <p>Look at iowait on Linux</p>
 
@@ -2097,11 +2142,11 @@ needs python 3 and newer linux kernel
         </li>
         
         
-        <li id="section-96">
+        <li id="section-98">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-96">&#182;</a>
+                <a class="pilcrow" href="#section-98">&#182;</a>
               </div>
               <p><a href="http://code.activestate.com/recipes/82465-a-friendly-mkdir/">http://code.activestate.com/recipes/82465-a-friendly-mkdir/</a></p>
 
@@ -2126,11 +2171,11 @@ needs python 3 and newer linux kernel
         </li>
         
         
-        <li id="section-97">
+        <li id="section-99">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-97">&#182;</a>
+                <a class="pilcrow" href="#section-99">&#182;</a>
               </div>
               <p>⏏  exit the program</p>
 
