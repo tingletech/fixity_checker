@@ -9,12 +9,8 @@ from __future__ import (absolute_import, division,
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
 
-# I was trying write this in a way that it would keep
-# with python 2 or python 3.  Right now it only works with
-# 2, mainly because daemonocle is python 2 only.  Will
-# need to use `six` to make it work with 2 and 3 and use
-# itertools with both.
-#
+# Allmost working with python 3
+# 
 # I went a little crazy with unicode characters, ⌦  ⏢  ⎄  
 # are used to group comments at a similar heading,
 # ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
@@ -24,6 +20,7 @@ APP_NAME = 'fixity_checker'
 # if you have any issues, ideas, or suggestions.
 #
 # ―Brian Tingle, Oakland, California
+import trace
 import daemonocle
 import argparse
 import pkg_resources  # part of setuptools
@@ -39,8 +36,9 @@ import logging.handlers
 from shove import Shove
 import hashlib
 import psutil
-import cStringIO
-import urlparse
+from six.moves import cStringIO
+from six.moves.urllib import parse as urlparse
+import six
 import gc
 import fnmatch
 import re
@@ -145,6 +143,10 @@ def main(argv=None):
     # parse the arguments and dispatch to correct function
     # ⏢
 
+    # hacky python 3 portage
+    if len(sys.argv) == 1:
+        sys.argv.append('')
+
     if argv is None:
         argv = parser.parse_args()
 
@@ -187,6 +189,7 @@ def main(argv=None):
 
     # use daemonocle for these subcommands
     if sys.argv[1] in ['start', 'stop', 'restart']:
+        print("HEY")
         daemon.do_action(sys.argv[1])
     # updates are a special case, note we are calling `start` on
     # the daemon, so the daemon can't be running when we update
@@ -259,7 +262,7 @@ def checker(conf):
 
     # ⎄ check for missing files
     logging.info('looking for missing files')
-    for ____, value in observations.iteritems():
+    for ____, value in six.iteritems(observations):
         if value['path'].startswith('s3://'):
             # TODO: check to make sure this file is still on s3
             pass
@@ -333,7 +336,7 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     # AWS key than the try/except here
     s3 = False
     # do I have a local filesystem path or s3 bucket key?
-    if type(filein) in [unicode, str]:
+    if isinstance(filein, six.string_types):
         filename = os.path.abspath(filein)
     try:
         if type(filein) is boto.s3.key.Key:
@@ -446,11 +449,11 @@ def fixity_checker_report(observations, outputdir):
     shards = defaultdict(dict)
     _mkdir(outputdir)
     # sort into bins for transport
-    for key, value in observations.iteritems():
+    for key, value in six.iteritems(observations):
         # first two characters are the key to the "shard"
         shards[key[:2]].update({key: value})
     # write out json for each bin
-    for key, value in shards.iteritems():
+    for key, value in six.iteritems(shards):
         out = os.path.join(outputdir, ''.join([key, '.json']))
         with open(out, 'w') as outfile:
             json.dump(shards[key], outfile, sort_keys=True,
@@ -654,6 +657,7 @@ def status(conf, daemon):
     # http://stackoverflow.com/a/1983450/1763984
     def captureSTDOUT(thefun, *a, **k):
         savstdout = sys.stdout
+        #sys.stdout = cStringIO()
         sys.stdout = cStringIO.StringIO()
         try:
             thefun(*a, **k)
@@ -675,7 +679,7 @@ def errors(conf, daemon):
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
     if any(errors):
         print("errors found")
-        for path, error in errors.iteritems():
+        for path, error in six.iteritems(errors):
             pp(error)
         errors.close()
         exit(1)
@@ -721,7 +725,7 @@ def extent(conf, daemon):
     spinner = spinning_cursor()
 
     # okay, ready to count!
-    for key, value in observations.iteritems():
+    for key, value in six.iteritems(observations):
         count.files = int(count.files) + 1
         if count.files % 100 == 0:
             spin_cursor(spinner)

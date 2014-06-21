@@ -1,7 +1,8 @@
 SQLAlchemy==0.9.4
 appdirs==1.3.0
 distribute==0.7.3
-daemonocle==0.4
+# daemonocle==0.7.0 when it comes out
+git+git://github.com/jnrbsn/daemonocle.git@dc5585a3cb79765a3a60d2e866c9a84779f9e044
 freeze==0.8.0
 futures==2.1.6
 parse==1.4.1
