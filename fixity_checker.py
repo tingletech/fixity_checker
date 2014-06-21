@@ -189,7 +189,6 @@ def main(argv=None):
 
     # use daemonocle for these subcommands
     if sys.argv[1] in ['start', 'stop', 'restart']:
-        print("HEY")
         daemon.do_action(sys.argv[1])
     # updates are a special case, note we are calling `start` on
     # the daemon, so the daemon can't be running when we update
@@ -657,8 +656,7 @@ def status(conf, daemon):
     # http://stackoverflow.com/a/1983450/1763984
     def captureSTDOUT(thefun, *a, **k):
         savstdout = sys.stdout
-        #sys.stdout = cStringIO()
-        sys.stdout = cStringIO.StringIO()
+        sys.stdout = cStringIO()
         try:
             thefun(*a, **k)
         finally:
