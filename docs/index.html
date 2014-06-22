@@ -77,7 +77,8 @@ __version__ = <span class="hljs-string">'0.3.0'</span></pre></div></div>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>I went a little crazy with unicode characters, ⌦  ⏢  ⎄<br>are used to group comments at a similar heading,
+              <p>I went a little crazy with unicode characters, ⌦  ⏢  ⎄
+are used to group comments at a similar heading,
 ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
 goal is to make it easy to scan, since this is a long code.</p>
 <p>Please <a href="https://github.com/tingletech/fixity_checker/issues">let me know</a>
@@ -89,7 +90,6 @@ if you have any issues, ideas, or suggestions.</p>
             <div class="content"><div class='highlight'><pre><span class="hljs-keyword">import</span> os
 <span class="hljs-keyword">import</span> daemonocle
 <span class="hljs-keyword">import</span> argparse
-<span class="hljs-keyword">import</span> pkg_resources  <span class="hljs-comment"># part of setuptools</span>
 <span class="hljs-keyword">from</span> appdirs <span class="hljs-keyword">import</span> user_data_dir
 <span class="hljs-keyword">import</span> sys
 <span class="hljs-keyword">import</span> json
@@ -432,9 +432,7 @@ parse the arguments and dispatch to correct function
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>        logging.debug(<span class="hljs-string">'0'</span>)
-        <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove
-        logging.debug(<span class="hljs-string">'1'</span>)</pre></div></div>
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove</pre></div></div>
             
         </li>
         
@@ -445,16 +443,14 @@ parse the arguments and dispatch to correct function
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
-              <p><code>Shove</code> import is here because it leaves <code>/dev/urandom</code> open in python3
+              <p><code>Shove</code> import is here because it leaves <code>/dev/urandom</code> open in py3
 <a href="https://github.com/jnrbsn/daemonocle#file-descriptor-handling">https://github.com/jnrbsn/daemonocle#file-descriptor-handling</a>
 <a href="https://github.com/jnrbsn/daemonocle/issues/3">https://github.com/jnrbsn/daemonocle/issues/3</a></p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>        observations = Shove(conf.data[<span class="hljs-string">'data_url'</span>], protocol=<span class="hljs-number">2</span>)
-        logging.debug(<span class="hljs-string">'2'</span>)
         errors = Shove(<span class="hljs-string">'file://{0}'</span>.format(conf.app.errors), protocol=<span class="hljs-number">2</span>,)
-        logging.debug(<span class="hljs-string">'3'</span>)
         <span class="hljs-keyword">while</span> <span class="hljs-keyword">True</span>:
             checker(conf, observations, errors)
 
@@ -1475,7 +1471,9 @@ following functions impliment subcommands
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>        app_config.ignore_re = <span class="hljs-string">r'|'</span>.join([fnmatch.translate(x) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> data[<span class="hljs-string">'ignore_paths'</span>]]) <span class="hljs-keyword">or</span> <span class="hljs-string">r'$.'</span>
+            <div class="content"><div class='highlight'><pre>        app_config.ignore_re = <span class="hljs-string">r'|'</span>.join(
+            [fnmatch.translate(x) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> data[<span class="hljs-string">'ignore_paths'</span>]]
+        ) <span class="hljs-keyword">or</span> <span class="hljs-string">r'$.'</span>
     <span class="hljs-keyword">else</span>:
         app_config.ignore_re = <span class="hljs-keyword">False</span>
     c = namedtuple(<span class="hljs-string">'FixityConfig'</span>, <span class="hljs-string">'app, daemon, args, data, conf_file'</span>)

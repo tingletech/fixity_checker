@@ -9,7 +9,7 @@ from __future__ import (absolute_import, division,
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
 __version__ = '0.3.0'
-# I went a little crazy with unicode characters, ⌦  ⏢  ⎄  
+# I went a little crazy with unicode characters, ⌦  ⏢  ⎄
 # are used to group comments at a similar heading,
 # ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
 # goal is to make it easy to scan, since this is a long code.
@@ -21,7 +21,6 @@ __version__ = '0.3.0'
 import os
 import daemonocle
 import argparse
-import pkg_resources  # part of setuptools
 from appdirs import user_data_dir
 import sys
 import json
@@ -158,16 +157,12 @@ def main(argv=None):
         logging.info('Daemon is starting')
         # persisted dict interface for long term memory
         # https://pypi.python.org/pypi/shove/
-        logging.debug('0')
         from shove import Shove
-        logging.debug('1')
-        # `Shove` import is here because it leaves `/dev/urandom` open in python3
+        # `Shove` import is here because it leaves `/dev/urandom` open in py3
         # https://github.com/jnrbsn/daemonocle#file-descriptor-handling
         # https://github.com/jnrbsn/daemonocle/issues/3
         observations = Shove(conf.data['data_url'], protocol=2)
-        logging.debug('2')
         errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
-        logging.debug('3')
         while True:
             checker(conf, observations, errors)
 
@@ -348,7 +343,7 @@ def check_one_file(filein, observations, hash, update, conf, errors):
 
     if conf.app.ignore_re and re.match(conf.app.ignore_re, filename):
         logging.debug('skipped {0}'.format(filename))
-        return 
+        return
 
     # normalize filename, take hash for key
     filename_key = hashlib.sha224(filename.encode('utf-8')).hexdigest()
@@ -601,7 +596,9 @@ def _parse_conf(args):
     app_config.errors = os.path.abspath(os.path.join(conf, 'errors'))
     if 'ignore_paths' in data and data['ignore_paths'] != []:
         # http://stackoverflow.com/a/5141829/1763984
-        app_config.ignore_re = r'|'.join([fnmatch.translate(x) for x in data['ignore_paths']]) or r'$.'
+        app_config.ignore_re = r'|'.join(
+            [fnmatch.translate(x) for x in data['ignore_paths']]
+        ) or r'$.'
     else:
         app_config.ignore_re = False
     c = namedtuple('FixityConfig', 'app, daemon, args, data, conf_file')
