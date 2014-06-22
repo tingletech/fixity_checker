@@ -33,16 +33,11 @@ import hashlib
 import psutil
 from six.moves import cStringIO
 from six.moves.urllib import parse as urlparse
+from six.moves import input
 import six
 import gc
 import fnmatch
 import re
-
-# user tty input is `raw_input()` in 2 -> `input()` in 3
-try:
-    input = raw_input
-except NameError:
-    pass
 
 # use `readline` if it is available for interactive input in init
 try:
@@ -159,8 +154,8 @@ def main(argv=None):
         # https://pypi.python.org/pypi/shove/
         from shove import Shove
         # `Shove` import is here because it leaves `/dev/urandom` open in py3
-        # https://github.com/jnrbsn/daemonocle#file-descriptor-handling
-        # https://github.com/jnrbsn/daemonocle/issues/3
+        # [daemonocle file-descriptor-handling](https://github.com/jnrbsn/daemonocle#file-descriptor-handling)
+        # [daemonocle issue 3](https://github.com/jnrbsn/daemonocle/issues/3)
         observations = Shove(conf.data['data_url'], protocol=2)
         errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
         while True:
