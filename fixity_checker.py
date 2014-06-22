@@ -8,9 +8,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
-
-# Allmost working with python 3
-# 
+__version__ = '0.3.0'
 # I went a little crazy with unicode characters, ⌦  ⏢  ⎄  
 # are used to group comments at a similar heading,
 # ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
@@ -20,20 +18,18 @@ APP_NAME = 'fixity_checker'
 # if you have any issues, ideas, or suggestions.
 #
 # ―Brian Tingle, Oakland, California
-import trace
+import os
 import daemonocle
 import argparse
 import pkg_resources  # part of setuptools
 from appdirs import user_data_dir
 import sys
-import os
 import json
 from pprint import pprint as pp
 import time
 from collections import namedtuple, defaultdict
 import logging
 import logging.handlers
-from shove import Shove
 import hashlib
 import psutil
 from six.moves import cStringIO
@@ -55,20 +51,11 @@ try:
 except ImportError:
     pass
 
-try:
-    import boto
-    import boto.s3.key
-except ImportError:
-    pass
-
 # default directory for program files
 try:
     CHECKER_DIR = os.environ['CHECKER_DIR']
 except KeyError:
     CHECKER_DIR = user_data_dir(APP_NAME, 'cdlib')
-
-# read version out of setup.py
-__version__ = pkg_resources.require(APP_NAME)[0].version
 
 
 # ⌦
@@ -169,8 +156,20 @@ def main(argv=None):
         # `while True` wrapper nested here to gain access to parsed `conf`
         log_nice(conf)
         logging.info('Daemon is starting')
+        # persisted dict interface for long term memory
+        # https://pypi.python.org/pypi/shove/
+        logging.debug('0')
+        from shove import Shove
+        logging.debug('1')
+        # `Shove` import is here because it leaves `/dev/urandom` open in python3
+        # https://github.com/jnrbsn/daemonocle#file-descriptor-handling
+        # https://github.com/jnrbsn/daemonocle/issues/3
+        observations = Shove(conf.data['data_url'], protocol=2)
+        logging.debug('2')
+        errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
+        logging.debug('3')
         while True:
-            checker(conf)
+            checker(conf, observations, errors)
 
     def cb_shutdown(message, code):
         # don't have access to observations or errror here; pull these out
@@ -207,13 +206,9 @@ def main(argv=None):
 # ⌦
 
 
-def checker(conf):
+def checker(conf, observations, errors):
     """ the main loop """
     startLoopTime = time.time()
-    # persisted dict interface for long term memory
-    # https://pypi.python.org/pypi/shove/
-    observations = Shove(conf.data['data_url'], protocol=2)
-    errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
 
     # ☞
     #   `update` the database and quit (main loop must not be running)
@@ -306,6 +301,7 @@ def check_one_arg(filein, observations, hash, update, conf, errors):
                     fullpath, observations, hash, update, conf, errors
                 )
     elif filein.startswith('s3://'):
+        import boto
         parts = urlparse.urlsplit(filein)
         # [urlparse-result-object](https://docs.python.org/2/library/urlparse.html#urlparse-result-object)
         bucket = boto.connect_s3().lookup(parts.netloc)
@@ -328,6 +324,11 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     :errors: is a dict like object persisting noted errors
     has side effects on observations and memories
     """
+    try:
+        import boto.s3.key
+    except ImportError:
+        pass
+
     nap = NapContext(conf.data['sleepiness'])
     filename = ""
     # we don't know if boto will be installed, must be better way
@@ -674,6 +675,7 @@ def status(conf, daemon):
 def errors(conf, daemon):
     """ check for un-cleared errors with files"""
     # persisted dict interface for long term memory
+    from shove import Shove
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
     if any(errors):
         print("errors found")
@@ -690,6 +692,7 @@ def errors(conf, daemon):
 
 def json_report(conf, daemon):
     # persisted dict interface for long term memory
+    from shove import Shove
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
     fixity_checker_report(observations, conf.args.report_directory[0])
     observations.close()
@@ -702,6 +705,7 @@ def json_load(conf, daemon):
 
 
 def extent(conf, daemon):
+    from shove import Shove
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
     count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
     count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0

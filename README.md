@@ -3,7 +3,7 @@
 fixity checking daemon
 
 
-_for Python versions 2.6, 2.7, <s>3.3, 3.4</s>_
+_for Python versions 2.6, 2.7, 3.3, 3.4_
 
  * `checker start | stop | restart | status` runs as a daemon, no worries about cron jobs running over each other, just let this run all the time.
    * slow and steady wins the race: `checker` is designed to be super nice so it can run 24/7 with minimal impact (runs `nice`, `ionice` Idle scheduler, and a special "sleepiness" factor that is used along with cpu wait to determine `sleep` naps between work.)

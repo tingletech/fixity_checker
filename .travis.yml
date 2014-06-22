@@ -3,6 +3,6 @@ env: CHECKER_DIR=xx
 python:
  - "2.7"
  - "2.6"
- # - "3.3"
- # - "3.4"
+ - "3.4"
+ - "3.3"
 script: python setup.py test
