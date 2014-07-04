@@ -38,6 +38,7 @@ import six
 import gc
 import fnmatch
 import re
+import math
 
 # use `readline` if it is available for interactive input in init
 try:
@@ -401,6 +402,7 @@ def analyze_file(filename, hash, nap):
     """ returns a dict of hash and size in bytes """
     # http://www.pythoncentral.io/hashing-files-with-python/
     hasher = hashlib.new(hash)
+    shannon = EntropyCounter()
     BLOCKSIZE = 1024 * hasher.block_size
     with open(filename, 'rb') as afile:
         # first buffer read does not get a nap
@@ -408,29 +410,66 @@ def analyze_file(filename, hash, nap):
         while len(buf) > 0:
             with nap:
                 hasher.update(buf)
+                shannon.update(buf)
                 buf = afile.read(BLOCKSIZE)
     return {
         'size': os.path.getsize(filename),
         hasher.name: hasher.hexdigest(),
-        'path': filename
+        'path': filename,
+        'efficiency': shannon.efficiency(),
     }
 
 
 def analyze_s3_key(key, hashtype, nap):
     """ returns a dict of hash and size in bytes """
     hasher = hashlib.new(hashtype)
+    shannon = EntropyCounter()
     BLOCKSIZE = 1024 * hasher.block_size
     # [boto.s3.key.Key.read](http://boto.readthedocs.org/en/latest/ref/s3.html#boto.s3.key.Key.read)
     buf = key.read(BLOCKSIZE)  # first buffer read does not get a nap
     while len(buf) > 0:
         with nap:
             hasher.update(buf)
+            shannon.update(buf)
             buf = key.read(BLOCKSIZE)
     return {
         'size': key.size,
         hasher.name: hasher.hexdigest(),
         'path': 's3://{0}/{1}'.format(key.bucket.name, key.name),
+        'efficiency': shannon.efficiency(),
     }
+
+
+class EntropyCounter(object):
+    """ calculate entropy of a file
+    based on http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
+    """
+    def __init__(self, default=None):
+        self.byte_freq = [0] * 256
+        self.byte_total = 0
+
+    def update(self, data):
+        for b in bytearray(data):
+            self.byte_freq[b] += 1
+            self.byte_total += 1
+
+    def entropy(self):
+        """bits per byte symbol (shannon entropy)"""
+        ent = 0.0
+        for f in self.byte_freq:
+            if f > 0:
+                freq = float(f) / self.byte_total
+                ent = ent + freq * math.log(freq, 2)
+        return -ent
+
+    def max_compress(self):
+        return (self.entropy() * self.byte_total) / 8
+
+    def efficiency(self):
+        """rate efficiency 0 to 100; 100 being at theoretical max"""
+        if self.byte_total == 0:
+            return 100
+        return self.max_compress() / self.byte_total
 
 
 def fixity_checker_report(observations, outputdir):
