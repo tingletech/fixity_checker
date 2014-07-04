@@ -106,7 +106,8 @@ if you have any issues, ideas, or suggestions.</p>
 <span class="hljs-keyword">import</span> six
 <span class="hljs-keyword">import</span> gc
 <span class="hljs-keyword">import</span> fnmatch
-<span class="hljs-keyword">import</span> re</pre></div></div>
+<span class="hljs-keyword">import</span> re
+<span class="hljs-keyword">import</span> math</pre></div></div>
             
         </li>
         
@@ -1062,6 +1063,7 @@ but I guess we could compute multiple checksums at once</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>    hasher = hashlib.new(hash)
+    shannon = EntropyCounter()
     BLOCKSIZE = <span class="hljs-number">1024</span> * hasher.block_size
     <span class="hljs-keyword">with</span> open(filename, <span class="hljs-string">'rb'</span>) <span class="hljs-keyword">as</span> afile:</pre></div></div>
             
@@ -1082,17 +1084,20 @@ but I guess we could compute multiple checksums at once</p>
         <span class="hljs-keyword">while</span> len(buf) &gt; <span class="hljs-number">0</span>:
             <span class="hljs-keyword">with</span> nap:
                 hasher.update(buf)
+                shannon.update(buf)
                 buf = afile.read(BLOCKSIZE)
     <span class="hljs-keyword">return</span> {
         <span class="hljs-string">'size'</span>: os.path.getsize(filename),
         hasher.name: hasher.hexdigest(),
-        <span class="hljs-string">'path'</span>: filename
+        <span class="hljs-string">'path'</span>: filename,
+        <span class="hljs-string">'efficiency'</span>: shannon.efficiency(),
     }
 
 
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">analyze_s3_key</span><span class="hljs-params">(key, hashtype, nap)</span>:</span>
     <span class="hljs-string">""" returns a dict of hash and size in bytes """</span>
     hasher = hashlib.new(hashtype)
+    shannon = EntropyCounter()
     BLOCKSIZE = <span class="hljs-number">1024</span> * hasher.block_size</pre></div></div>
             
         </li>
@@ -1112,12 +1117,46 @@ but I guess we could compute multiple checksums at once</p>
     <span class="hljs-keyword">while</span> len(buf) &gt; <span class="hljs-number">0</span>:
         <span class="hljs-keyword">with</span> nap:
             hasher.update(buf)
+            shannon.update(buf)
             buf = key.read(BLOCKSIZE)
     <span class="hljs-keyword">return</span> {
         <span class="hljs-string">'size'</span>: key.size,
         hasher.name: hasher.hexdigest(),
         <span class="hljs-string">'path'</span>: <span class="hljs-string">'s3://{0}/{1}'</span>.format(key.bucket.name, key.name),
+        <span class="hljs-string">'efficiency'</span>: shannon.efficiency(),
     }
+
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EntropyCounter</span><span class="hljs-params">(object)</span>:</span>
+    <span class="hljs-string">""" calculate entropy of a file
+    based on http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
+    """</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, default=None)</span>:</span>
+        self.byte_freq = [<span class="hljs-number">0</span>] * <span class="hljs-number">256</span>
+        self.byte_total = <span class="hljs-number">0</span>
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">update</span><span class="hljs-params">(self, data)</span>:</span>
+        <span class="hljs-keyword">for</span> b <span class="hljs-keyword">in</span> bytearray(data):
+            self.byte_freq[b] += <span class="hljs-number">1</span>
+            self.byte_total += <span class="hljs-number">1</span>
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">entropy</span><span class="hljs-params">(self)</span>:</span>
+        <span class="hljs-string">"""bits per byte symbol (shannon entropy)"""</span>
+        ent = <span class="hljs-number">0.0</span>
+        <span class="hljs-keyword">for</span> f <span class="hljs-keyword">in</span> self.byte_freq:
+            <span class="hljs-keyword">if</span> f &gt; <span class="hljs-number">0</span>:
+                freq = float(f) / self.byte_total
+                ent = ent + freq * math.log(freq, <span class="hljs-number">2</span>)
+        <span class="hljs-keyword">return</span> -ent
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">max_compress</span><span class="hljs-params">(self)</span>:</span>
+        <span class="hljs-keyword">return</span> (self.entropy() * self.byte_total) / <span class="hljs-number">8</span>
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">efficiency</span><span class="hljs-params">(self)</span>:</span>
+        <span class="hljs-string">"""rate efficiency 0 to 100; 100 being at theoretical max"""</span>
+        <span class="hljs-keyword">if</span> self.byte_total == <span class="hljs-number">0</span>:
+            <span class="hljs-keyword">return</span> <span class="hljs-number">100</span>
+        <span class="hljs-keyword">return</span> self.max_compress() / self.byte_total
 
 
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fixity_checker_report</span><span class="hljs-params">(observations, outputdir)</span>:</span>
