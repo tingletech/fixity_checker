@@ -23,7 +23,7 @@ setup(
     packages=find_packages(),
     install_requires=['shove', 'appdirs', 'psutil', 'daemonocle'],
     tests_require=['scripttest'],
-    url='https://github.com/tingletech/fixity',
+    url='https://github.com/tingletech/fixity_checker',
     py_modules=['fixity_checker', ],
     entry_points={
         'console_scripts': [
