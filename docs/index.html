@@ -107,7 +107,8 @@ if you have any issues, ideas, or suggestions.</p>
 <span class="hljs-keyword">import</span> gc
 <span class="hljs-keyword">import</span> fnmatch
 <span class="hljs-keyword">import</span> re
-<span class="hljs-keyword">import</span> math</pre></div></div>
+<span class="hljs-keyword">import</span> math
+<span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove</pre></div></div>
             
         </li>
         
@@ -416,23 +417,6 @@ parse the arguments and dispatch to correct function
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-21">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
-              </div>
-              <p><code>Shove</code> import is here because it leaves <code>/dev/urandom</code> open in py3
-<a href="https://github.com/jnrbsn/daemonocle#file-descriptor-handling">daemonocle file-descriptor-handling</a>
-<a href="https://github.com/jnrbsn/daemonocle/issues/3">daemonocle issue 3</a></p>
-
-            </div>
-            
             <div class="content"><div class='highlight'><pre>        observations = Shove(conf.data[<span class="hljs-string">'data_url'</span>], protocol=<span class="hljs-number">2</span>)
         errors = Shove(<span class="hljs-string">'file://{0}'</span>.format(conf.app.errors), protocol=<span class="hljs-number">2</span>,)
         <span class="hljs-keyword">while</span> <span class="hljs-keyword">True</span>:
@@ -443,11 +427,11 @@ parse the arguments and dispatch to correct function
         </li>
         
         
-        <li id="section-22">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <p>don’t have access to observations or errror here; pull these out
 a level so we can close them?</p>
@@ -469,11 +453,11 @@ a level so we can close them?</p>
         </li>
         
         
-        <li id="section-23">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>use daemonocle for these subcommands</p>
 
@@ -485,11 +469,11 @@ a level so we can close them?</p>
         </li>
         
         
-        <li id="section-24">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>updates are a special case, note we are calling <code>start</code> on
 the daemon, so the daemon can’t be running when we update</p>
@@ -503,11 +487,11 @@ the daemon, so the daemon can’t be running when we update</p>
         </li>
         
         
-        <li id="section-25">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <p>use argparse subcommands mapped to internal function names
 for any other commands</p>
@@ -521,11 +505,11 @@ for any other commands</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p>⌦
 main loop that runs as daemon
@@ -542,11 +526,11 @@ main loop that runs as daemon
         </li>
         
         
-        <li id="section-27">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <p>☞
   <code>update</code> the database and quit (main loop must not be running)
@@ -560,11 +544,11 @@ main loop that runs as daemon
         </li>
         
         
-        <li id="section-28">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p>right now this does not handle legit removals; only file
 changes TODO</p>
@@ -584,11 +568,11 @@ changes TODO</p>
         </li>
         
         
-        <li id="section-29">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <p>clear errors</p>
 
@@ -603,13 +587,28 @@ changes TODO</p>
         </li>
         
         
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>⏏  exit the program</p>
+
+            </div>
+            
+        </li>
+        
+        
         <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
-              <p>⏏  exit the program</p>
+              <p>☟
+ not an <code>update</code>, continue down the loop
+☟</p>
 
             </div>
             
@@ -622,9 +621,7 @@ changes TODO</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
-              <p>☟
- not an <code>update</code>, continue down the loop
-☟</p>
+              <p>TODO; set up var for counts</p>
 
             </div>
             
@@ -637,19 +634,6 @@ changes TODO</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
-              <p>TODO; set up var for counts</p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-33">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
-              </div>
               <p>⎄ check the hashes
 for each hash type</p>
 
@@ -661,11 +645,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-34">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p>for each <code>archive_paths</code> in configuration</p>
 
@@ -677,11 +661,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-35">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p><code>+&#39;&#39;</code> 2/3 unicode compatibility <a href="http://fomori.org/blog/?p=486">http://fomori.org/blog/?p=486</a></p>
 
@@ -696,11 +680,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-36">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>⎄ check for missing files</p>
 
@@ -713,11 +697,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-37">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>TODO: check to make sure this file is still on s3</p>
 
@@ -728,11 +712,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-38">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>TODO: check to make sure this file is still on s3</p>
 
@@ -748,11 +732,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-39">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p>⎄ output json reports</p>
 
@@ -765,11 +749,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-40">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p>⎄ end of loop</p>
 
@@ -784,11 +768,11 @@ for each hash type</p>
         </li>
         
         
-        <li id="section-41">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <p><code>min_loop</code> is the shortest time it should take to do a
 loop, take a nap if we are done too soon</p>
@@ -802,11 +786,11 @@ loop, take a nap if we are done too soon</p>
         </li>
         
         
-        <li id="section-42">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>⌦
 file checking functions
@@ -832,11 +816,11 @@ file checking functions
         </li>
         
         
-        <li id="section-43">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p><a href="https://docs.python.org/2/library/urlparse.html#urlparse-result-object">urlparse-result-object</a></p>
 
@@ -848,11 +832,11 @@ file checking functions
         </li>
         
         
-        <li id="section-44">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <p>look for files that match the user supplied path,
 acts like recursive directory search</p>
@@ -886,11 +870,11 @@ acts like recursive directory search</p>
         </li>
         
         
-        <li id="section-45">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <p>we don’t know if boto will be installed, must be better way
 to detect if <code>filein</code> a string (ahem, unicode thingy) or an
@@ -903,11 +887,11 @@ AWS key than the try/except here</p>
         </li>
         
         
-        <li id="section-46">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <p>do I have a local filesystem path or s3 bucket key?</p>
 
@@ -930,11 +914,11 @@ AWS key than the try/except here</p>
         </li>
         
         
-        <li id="section-47">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <p>normalize filename, take hash for key</p>
 
@@ -947,11 +931,11 @@ AWS key than the try/except here</p>
         </li>
         
         
-        <li id="section-48">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <p>dispatch, these are ripe for refactoring to take
 a file object</p>
@@ -968,11 +952,11 @@ a file object</p>
         </li>
         
         
-        <li id="section-49">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <p>make sure things match</p>
 
@@ -995,11 +979,11 @@ a file object</p>
         </li>
         
         
-        <li id="section-50">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <p>update observations</p>
 
@@ -1021,11 +1005,11 @@ a file object</p>
         </li>
         
         
-        <li id="section-51">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p>using <code>now.keys()</code> actually checks the size again,
 only one new hash key/value comes in at a time right now,
@@ -1052,11 +1036,11 @@ but I guess we could compute multiple checksums at once</p>
         </li>
         
         
-        <li id="section-52">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <p><a href="http://www.pythoncentral.io/hashing-files-with-python/">http://www.pythoncentral.io/hashing-files-with-python/</a></p>
 
@@ -1070,11 +1054,11 @@ but I guess we could compute multiple checksums at once</p>
         </li>
         
         
-        <li id="section-53">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <p>first buffer read does not get a nap</p>
 
@@ -1103,11 +1087,11 @@ but I guess we could compute multiple checksums at once</p>
         </li>
         
         
-        <li id="section-54">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               <p><a href="http://boto.readthedocs.org/en/latest/ref/s3.html#boto.s3.key.Key.read">boto.s3.key.Key.read</a></p>
 
@@ -1129,10 +1113,23 @@ but I guess we could compute multiple checksums at once</p>
 
 <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EntropyCounter</span><span class="hljs-params">(object)</span>:</span>
     <span class="hljs-string">""" calculate entropy of a file
-    based on
-    http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
-    """</span>
-    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, default=None)</span>:</span>
+    """</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              <p>based on <a href="http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9">ActiveState Code » Recipes » Shannon Entropy Calculation (Python recipe)</a>
+Created by FB36 on Mon, 29 Nov 2010 (MIT)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, default=None)</span>:</span>
         self.byte_freq = [<span class="hljs-number">0</span>] * <span class="hljs-number">256</span>
         self.byte_total = <span class="hljs-number">0</span>
 
@@ -1645,8 +1642,7 @@ following functions impliment subcommands
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove
-    errors = Shove(<span class="hljs-string">'file://{0}'</span>.format(conf.app.errors), protocol=<span class="hljs-number">2</span>, flag=<span class="hljs-string">'r'</span>)
+            <div class="content"><div class='highlight'><pre>    errors = Shove(<span class="hljs-string">'file://{0}'</span>.format(conf.app.errors), protocol=<span class="hljs-number">2</span>, flag=<span class="hljs-string">'r'</span>)
     <span class="hljs-keyword">if</span> any(errors):
         print(<span class="hljs-string">"errors found"</span>)
         <span class="hljs-keyword">for</span> path, error <span class="hljs-keyword">in</span> six.iteritems(errors):
@@ -1688,8 +1684,7 @@ following functions impliment subcommands
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove
-    observations = Shove(conf.data[<span class="hljs-string">'data_url'</span>], protocol=<span class="hljs-number">2</span>, flag=<span class="hljs-string">'r'</span>)
+            <div class="content"><div class='highlight'><pre>    observations = Shove(conf.data[<span class="hljs-string">'data_url'</span>], protocol=<span class="hljs-number">2</span>, flag=<span class="hljs-string">'r'</span>)
     fixity_checker_report(observations, conf.args.report_directory[<span class="hljs-number">0</span>])
     observations.close()
 
@@ -1714,7 +1709,6 @@ following functions impliment subcommands
 
 
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">extent</span><span class="hljs-params">(conf, daemon)</span>:</span>
-    <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove
     observations = Shove(conf.data[<span class="hljs-string">'data_url'</span>], protocol=<span class="hljs-number">2</span>, flag=<span class="hljs-string">'r'</span>)
     count = namedtuple(
         <span class="hljs-string">'Counts'</span>,
