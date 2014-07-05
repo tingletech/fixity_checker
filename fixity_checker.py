@@ -39,6 +39,7 @@ import gc
 import fnmatch
 import re
 import math
+from shove import Shove
 
 # use `readline` if it is available for interactive input in init
 try:
@@ -153,10 +154,6 @@ def main(argv=None):
         logging.info('Daemon is starting')
         # persisted dict interface for long term memory
         # https://pypi.python.org/pypi/shove/
-        from shove import Shove
-        # `Shove` import is here because it leaves `/dev/urandom` open in py3
-        # [daemonocle file-descriptor-handling](https://github.com/jnrbsn/daemonocle#file-descriptor-handling)
-        # [daemonocle issue 3](https://github.com/jnrbsn/daemonocle/issues/3)
         observations = Shove(conf.data['data_url'], protocol=2)
         errors = Shove('file://{0}'.format(conf.app.errors), protocol=2,)
         while True:
@@ -705,7 +702,6 @@ def status(conf, daemon):
 def errors(conf, daemon):
     """ check for un-cleared errors with files"""
     # persisted dict interface for long term memory
-    from shove import Shove
     errors = Shove('file://{0}'.format(conf.app.errors), protocol=2, flag='r')
     if any(errors):
         print("errors found")
@@ -722,7 +718,6 @@ def errors(conf, daemon):
 
 def json_report(conf, daemon):
     # persisted dict interface for long term memory
-    from shove import Shove
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
     fixity_checker_report(observations, conf.args.report_directory[0])
     observations.close()
@@ -735,7 +730,6 @@ def json_load(conf, daemon):
 
 
 def extent(conf, daemon):
-    from shove import Shove
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
     count = namedtuple(
         'Counts',
