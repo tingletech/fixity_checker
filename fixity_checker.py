@@ -442,7 +442,8 @@ def analyze_s3_key(key, hashtype, nap):
 
 class EntropyCounter(object):
     """ calculate entropy of a file
-    based on http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
+    based on
+    http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
     """
     def __init__(self, default=None):
         self.byte_freq = [0] * 256
@@ -462,14 +463,11 @@ class EntropyCounter(object):
                 ent = ent + freq * math.log(freq, 2)
         return -ent
 
-    def max_compress(self):
-        return (self.entropy() * self.byte_total) / 8
-
     def efficiency(self):
-        """rate efficiency 0 to 100; 100 being at theoretical max"""
+        """bits per bit (float 0 to 1) theoretical efficiency"""
         if self.byte_total == 0:
-            return 100
-        return self.max_compress() / self.byte_total
+            return 1
+        return self.entropy() / 8
 
 
 def fixity_checker_report(observations, outputdir):
@@ -738,8 +736,12 @@ def json_load(conf, daemon):
 def extent(conf, daemon):
     from shove import Shove
     observations = Shove(conf.data['data_url'], protocol=2, flag='r')
-    count = namedtuple('Counts', 'files, bytes, uniqueFiles, uniqueBytes')
+    count = namedtuple(
+        'Counts',
+        'files, bytes, uniqueFiles, uniqueBytes, minBytes, minUniqueBytes'
+    )
     count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = 0
+    count.minBytes = count.minUniqueBytes = 0
     dedup = {}
 
     # this can take a while, let the user know we are working on it
@@ -762,13 +764,15 @@ def extent(conf, daemon):
         count.files = int(count.files) + 1
         if count.files % 100 == 0:
             spin_cursor(spinner)
-        count.bytes = count.bytes + value['size']
+        count.bytes += value['size']
+        count.minBytes += value['size'] * value['efficiency']
         hash_a = conf.data['hashlib'][0]
         hash_v = value[hash_a]
         if not(hash_v in dedup):
             # have not seen this one before
-            count.uniqueFiles = count.uniqueFiles + 1
-            count.uniqueBytes = count.uniqueBytes + value['size']
+            count.uniqueFiles += 1
+            count.uniqueBytes += value['size']
+            count.minUniqueBytes += value['size'] * value['efficiency']
         # use 'size' to note that I've seen this one;
         # could double check that the size has not changed
         dedup[hash_v] = value['size']
@@ -783,10 +787,13 @@ def extent(conf, daemon):
             num /= 1024.0
         return "%3.1f%s" % (num, 'TiB')
 
-    print('observing {0} files {1} bytes ({2}) | \
-        unique {3} files {4} bytes ({5})'.format(
+    print('observing {0} files {1} bytes ({2}) {6:.2%} efficient compression| \
+        unique {3} files {4} bytes ({5}) {7:.2%} efficient compression'.format(
         count.files, count.bytes, sizeof_fmt(count.bytes),
-        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes)))
+        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes),
+        count.minBytes / count.bytes,
+        count.minUniqueBytes / count.uniqueBytes,)
+    )
     print()
 
 
