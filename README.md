@@ -8,7 +8,7 @@ _for Python versions 2.6, 2.7, 3.3, 3.4_
  * `checker start | stop | restart | status` runs as a daemon, no worries about cron jobs running over each other, just let this run all the time.
    * slow and steady wins the race: `checker` is designed to be super nice so it can run 24/7 with minimal impact (runs `nice`, `ionice` Idle scheduler, and a special "sleepiness" factor that is used along with cpu wait to determine `sleep` naps between work.)
  * `checker errors` fixity monitor; alerts if any anomalies are detected
- * `checker extent` file and byte counts, total and unique
+ * `checker extent` file and byte counts, total and unique, theoretical compression efficiency
  * `checker init` setup wizard and `checker show_conf` validator
  * can monitor local files and directories or AWS S3 `s3://bucket/[path]`
 
