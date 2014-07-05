@@ -1129,7 +1129,8 @@ but I guess we could compute multiple checksums at once</p>
 
 <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EntropyCounter</span><span class="hljs-params">(object)</span>:</span>
     <span class="hljs-string">""" calculate entropy of a file
-    based on http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
+    based on
+    http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
     """</span>
     <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, default=None)</span>:</span>
         self.byte_freq = [<span class="hljs-number">0</span>] * <span class="hljs-number">256</span>
@@ -1149,14 +1150,11 @@ but I guess we could compute multiple checksums at once</p>
                 ent = ent + freq * math.log(freq, <span class="hljs-number">2</span>)
         <span class="hljs-keyword">return</span> -ent
 
-    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">max_compress</span><span class="hljs-params">(self)</span>:</span>
-        <span class="hljs-keyword">return</span> (self.entropy() * self.byte_total) / <span class="hljs-number">8</span>
-
     <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">efficiency</span><span class="hljs-params">(self)</span>:</span>
-        <span class="hljs-string">"""rate efficiency 0 to 100; 100 being at theoretical max"""</span>
+        <span class="hljs-string">"""bits per bit (float 0 to 1) theoretical efficiency"""</span>
         <span class="hljs-keyword">if</span> self.byte_total == <span class="hljs-number">0</span>:
-            <span class="hljs-keyword">return</span> <span class="hljs-number">100</span>
-        <span class="hljs-keyword">return</span> self.max_compress() / self.byte_total
+            <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>
+        <span class="hljs-keyword">return</span> self.entropy() / <span class="hljs-number">8</span>
 
 
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">fixity_checker_report</span><span class="hljs-params">(observations, outputdir)</span>:</span>
@@ -1718,8 +1716,12 @@ following functions impliment subcommands
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">extent</span><span class="hljs-params">(conf, daemon)</span>:</span>
     <span class="hljs-keyword">from</span> shove <span class="hljs-keyword">import</span> Shove
     observations = Shove(conf.data[<span class="hljs-string">'data_url'</span>], protocol=<span class="hljs-number">2</span>, flag=<span class="hljs-string">'r'</span>)
-    count = namedtuple(<span class="hljs-string">'Counts'</span>, <span class="hljs-string">'files, bytes, uniqueFiles, uniqueBytes'</span>)
+    count = namedtuple(
+        <span class="hljs-string">'Counts'</span>,
+        <span class="hljs-string">'files, bytes, uniqueFiles, uniqueBytes, minBytes, minUniqueBytes'</span>
+    )
     count.bytes = count.files = count.uniqueFiles = count.uniqueBytes = <span class="hljs-number">0</span>
+    count.minBytes = count.minUniqueBytes = <span class="hljs-number">0</span>
     dedup = {}</pre></div></div>
             
         </li>
@@ -1766,7 +1768,8 @@ following functions impliment subcommands
         count.files = int(count.files) + <span class="hljs-number">1</span>
         <span class="hljs-keyword">if</span> count.files % <span class="hljs-number">100</span> == <span class="hljs-number">0</span>:
             spin_cursor(spinner)
-        count.bytes = count.bytes + value[<span class="hljs-string">'size'</span>]
+        count.bytes += value[<span class="hljs-string">'size'</span>]
+        count.minBytes += value[<span class="hljs-string">'size'</span>] * value[<span class="hljs-string">'efficiency'</span>]
         hash_a = conf.data[<span class="hljs-string">'hashlib'</span>][<span class="hljs-number">0</span>]
         hash_v = value[hash_a]
         <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span>(hash_v <span class="hljs-keyword">in</span> dedup):</pre></div></div>
@@ -1784,8 +1787,9 @@ following functions impliment subcommands
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>            count.uniqueFiles = count.uniqueFiles + <span class="hljs-number">1</span>
-            count.uniqueBytes = count.uniqueBytes + value[<span class="hljs-string">'size'</span>]</pre></div></div>
+            <div class="content"><div class='highlight'><pre>            count.uniqueFiles += <span class="hljs-number">1</span>
+            count.uniqueBytes += value[<span class="hljs-string">'size'</span>]
+            count.minUniqueBytes += value[<span class="hljs-string">'size'</span>] * value[<span class="hljs-string">'efficiency'</span>]</pre></div></div>
             
         </li>
         
@@ -1826,10 +1830,13 @@ could double check that the size has not changed</p>
             num /= <span class="hljs-number">1024.0</span>
         <span class="hljs-keyword">return</span> <span class="hljs-string">"%3.1f%s"</span> % (num, <span class="hljs-string">'TiB'</span>)
 
-    print(<span class="hljs-string">'observing {0} files {1} bytes ({2}) | \
-        unique {3} files {4} bytes ({5})'</span>.format(
+    print(<span class="hljs-string">'observing {0} files {1} bytes ({2}) {6:.2%} efficient compression| \
+        unique {3} files {4} bytes ({5}) {7:.2%} efficient compression'</span>.format(
         count.files, count.bytes, sizeof_fmt(count.bytes),
-        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes)))
+        count.uniqueFiles, count.uniqueBytes, sizeof_fmt(count.uniqueBytes),
+        count.minBytes / count.bytes,
+        count.minUniqueBytes / count.uniqueBytes,)
+    )
     print()</pre></div></div>
             
         </li>
