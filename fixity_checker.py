@@ -442,9 +442,10 @@ def analyze_s3_key(key, hashtype, nap):
 
 class EntropyCounter(object):
     """ calculate entropy of a file
-    based on
-    http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9
     """
+    # based on [ActiveState Code » Recipes » Shannon Entropy Calculation (Python recipe)](
+    # http://code.activestate.com/recipes/577476-shannon-entropy-calculation/#c9)
+    # Created by FB36 on Mon, 29 Nov 2010 (MIT)
     def __init__(self, default=None):
         self.byte_freq = [0] * 256
         self.byte_total = 0
