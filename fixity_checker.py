@@ -317,7 +317,11 @@ def check_one_file(filein, observations, hash, update, conf, errors):
     except ImportError:
         pass
 
+    # set up nap here so we don't have to pass conf further down,
+    # makes it eaiser to unit test
     nap = NapContext(conf.data['sleepiness'])
+
+    # test what type got passed in to :filein:
     filename = ""
     # we don't know if boto will be installed, must be better way
     # to detect if `filein` a string (ahem, unicode thingy) or an
