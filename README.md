@@ -10,7 +10,8 @@ _for Python versions 2.6, 2.7, 3.3, 3.4_
  * `checker errors` fixity monitor; alerts if any anomalies are detected
  * `checker extent` file and byte counts, total and unique, theoretical compression efficiency
  * `checker init` setup wizard and `checker show_conf` validator
- * can monitor local files and directories or AWS S3 `s3://bucket/[path]`
+ * can monitor local files and directories or AWS S3 `s3://bucket/[path]` (TODO; update subcommand for s3)
+ * BSD 3-clause license
 
 
 ## install
