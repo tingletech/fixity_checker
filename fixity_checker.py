@@ -258,7 +258,6 @@ def checker(conf, observations, errors):
 
     # ⎄ output json reports
     fixity_checker_report(observations, conf.app.json_dir)
-    observations.close()
     logging.info('writting reports at {0}'.format(conf.app.json_dir))
 
     # ⎄ end of loop
