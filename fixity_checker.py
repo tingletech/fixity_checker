@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 # I went a little crazy with unicode characters, ⌦  ⏢  ⎄
 # are used to group comments at a similar heading,
 # ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
@@ -106,6 +106,9 @@ def main(argv=None):
         '--no-detach', dest='detach', action='store_false'
     )
     parsers['update'].add_argument('file', nargs='+', help='file(s) to update')
+    parsers['update'].add_argument('--remove',
+                                   action='store_true', 
+                                   help='file removed')
     parsers['json_report'].add_argument('report_directory', nargs=1)
     parsers['json_load'].add_argument('report_directory', nargs=1)
     parsers['init'].add_argument('--archive_paths', nargs='+',
@@ -203,17 +206,20 @@ def checker(conf, observations, errors):
     # ☞
     if conf.args.subparser_name == 'update':
         logging.warning('altering memories')
-        # right now this does not handle legit removals; only file
-        # changes TODO
+        # TODO right now this does not handle s3; only local files
         for f in conf.args.file:
             path = os.path.abspath(f)
             print(path)
-            for hashtype in conf.data['hashlib']:
-                check_one_file(
-                    path, observations, hashtype, True, conf, errors
-                )
-                observations.sync()
             filename_key = hashlib.sha224(path.encode('utf-8')).hexdigest()
+            if conf.args.remove:
+                del observations[filename_key]
+                observations.sync()
+            else:
+                for hashtype in conf.data['hashlib']:
+                    check_one_file(
+                        path, observations, hashtype, True, conf, errors
+                    )
+                    observations.sync()
             # clear errors
             errors.pop(filename_key, None)
             errors.sync()
