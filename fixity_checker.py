@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 # I went a little crazy with unicode characters, ⌦  ⏢  ⎄
 # are used to group comments at a similar heading,
 # ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
@@ -586,7 +586,7 @@ def _init(conf, directories, data_url, hash):
         'min_loop': 43200,          # twice a day
         'sleepiness': 1
     }
-    os.mkdir(conf)
+    _mkdir(conf)
     os.mkdir(os.path.join(conf, 'logs'))
     with open(
         os.path.join(conf, 'conf_{0}.json'.format(APP_NAME)),
