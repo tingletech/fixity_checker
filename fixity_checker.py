@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 # ⏣ ⏣  https://github.com/tingletech/fixity_checker ⏣ ⏣
 APP_NAME = 'fixity_checker'
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 # I went a little crazy with unicode characters, ⌦  ⏢  ⎄
 # are used to group comments at a similar heading,
 # ☞ ☟ for zig-zags in flow, and ⏏ marks an exit point.  My
@@ -555,10 +555,15 @@ def init(args):
     )
     print(data_url)
 
-    try:
+    if hasattr(hashlib,'algorithms'):  # python 2.7
         hashlib_algorithms = hashlib.algorithms
-    except:
+    elif hasattr(hashlib, 'algorithms_available'):  # python 3
         hashlib_algorithms = tuple(hashlib.algorithms_available)
+    else:
+    # python 2.6; just show the always present algorighms
+    # https://docs.python.org/2.6/library/hashlib.html#module-hashlib
+        hashlib_algorithms = tuple(['md5', 'sha1', 'sha224',
+                                   'sha256', 'sha384', 'sha512'])
 
     pp(list(hashlib_algorithms))
 
